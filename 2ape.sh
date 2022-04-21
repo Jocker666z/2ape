@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2086
 # 2ape
-# Various lossless to Monkey's Audio lossless.
+# Various lossless to Monkey's Audio while keeping the tags.
 # \(^o^)/ 
 #
 # It does this:
@@ -456,18 +456,36 @@ APEv2_blacklist=(
 	'TOTALTRACKS'
 )
 
+# Start time counter of process
+start_process_time=$(date +%s)
+
 # Find source files
 search_source_files
+
 # Start main
 if (( "${#lst_audio_src[@]}" )); then
-	start_process_time=$(date +%s)
+	echo "2ape start processing"
+	echo "${#lst_audio_src[@]} source files found"
+
+	# Test
 	test_flac
 	test_wavpack
+	echo "${#lst_audio_src_pass[@]} validated source files"
+	echo "${#lst_audio_src_rejected[@]} rejected source files"
+
+	# Decode
 	decode_flac
 	decode_wavpack
+	echo "${#lst_audio_wav_decoded[@]} source files decoded"
+
+	# Compress
 	compress_ape
+
+	# Tag
 	tags_2_apev2
 	tag_ape
+
+	# End
 	stop_process_time=$(date +%s)
 	summary_of_processing
 	if (( "${#lst_audio_ape_compressed[@]}" )); then

@@ -1,6 +1,6 @@
 # 2ape
 
-Various lossless to Monkey's Audio lossless while keeping the tags.
+Various lossless to Monkey's Audio while keeping the tags.
 
 Lossless audio source supported: FLAC, WAVPACK
 
