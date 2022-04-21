@@ -221,6 +221,7 @@ done
 }
 # Monkey's Audio - Compress
 compress_ape() {
+f="0"
 for file in "${lst_audio_wav_decoded[@]}"; do
 	# Compress ape
 	(
@@ -233,8 +234,27 @@ for file in "${lst_audio_wav_decoded[@]}"; do
 	if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
 		wait -n
 	fi
+	if ! [[ "$verbose" = "1" ]]; then
+		# Progress
+		f=$((f+1))
+		if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
+			echo -ne "${f}/${#lst_audio_wav_decoded[@]} ape file is being compressed"\\r
+		else
+			echo -ne "${f}/${#lst_audio_wav_decoded[@]} ape files are being compressed"\\r
+		fi
+	fi
 done
 wait
+
+# Progress end
+if ! [[ "$verbose" = "1" ]]; then
+	tput hpa 0; tput el
+	if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
+		echo "${f} ape file compressed"
+	else
+		echo "${f} ape files compressed"
+	fi
+fi
 
 # Clean
 for file in "${lst_audio_wav_decoded[@]}"; do
@@ -358,6 +378,7 @@ local time_formated
 local file_source_files_size
 local file_target_files_size
 local file_diff_percentage
+local file_path_truncate
 local total_source_files_size
 local total_target_files_size
 local total_diff_percentage
@@ -373,7 +394,8 @@ if (( "${#lst_audio_src[@]}" )); then
 		file_target_files_size=$(get_files_size_bytes "${lst_audio_ape_compressed[i]}")
 		file_diff_percentage=$(calc_percent "$file_source_files_size" "$file_target_files_size")
 		filesPassSizeReduction+=( "$file_diff_percentage" )
-		filesPassLabel+=( "(${filesPassSizeReduction[i]}%) ~ ${lst_audio_ape_compressed[i]}" )
+		file_path_truncate=$(echo ${lst_audio_ape_compressed[i]} | rev | cut -d'/' -f-3 | rev)
+		filesPassLabel+=( "(${filesPassSizeReduction[i]}%) ~ .${file_path_truncate}" )
 	done
 	# Total files size stats
 	total_source_files_size=$(calc_files_size "${lst_audio_src_pass[@]}")
@@ -483,13 +505,16 @@ search_source_files
 # Start main
 if (( "${#lst_audio_src[@]}" )); then
 	echo "2ape start processing"
+	echo
 	echo "${#lst_audio_src[@]} source files found"
 
 	# Test
 	test_flac
 	test_wavpack
 	echo "${#lst_audio_src_pass[@]} validated source files"
-	echo "${#lst_audio_src_rejected[@]} rejected source files"
+	if (( "${#lst_audio_src_rejected[@]}" )); then
+		echo "${#lst_audio_src_rejected[@]} rejected source files"
+	fi
 
 	# Decode
 	decode_flac
