@@ -224,7 +224,11 @@ compress_ape() {
 for file in "${lst_audio_wav_decoded[@]}"; do
 	# Compress ape
 	(
-	mac "$file" "${file%.*}.ape" "$mac_compress_arg"
+	if [[ "$verbose" = "1" ]]; then
+		mac "$file" "${file%.*}.ape" "$mac_compress_arg"
+	else
+		mac "$file" "${file%.*}.ape" "$mac_compress_arg" &>/dev/null
+	fi
 	) &
 	if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
 		wait -n
@@ -244,7 +248,11 @@ done
 # Monkey's Audio - Tag
 tag_ape() {
 for i in "${!lst_audio_ape_compressed[@]}"; do
-	mac "${lst_audio_ape_compressed[i]%.*}.ape" -t "${lst_audio_ape_target_tags[i]}"
+	if [[ "$verbose" = "1" ]]; then
+		mac "${lst_audio_ape_compressed[i]%.*}.ape" -t "${lst_audio_ape_target_tags[i]}"
+	else
+		mac "${lst_audio_ape_compressed[i]%.*}.ape" -t "${lst_audio_ape_target_tags[i]}" &>/dev/null
+	fi
 done
 }
 # Total size calculation in Mb - Input must be in bytes
@@ -455,6 +463,16 @@ APEv2_blacklist=(
 	'TRACKTOTAL'
 	'TOTALTRACKS'
 )
+# Command arguments
+while [[ $# -gt 0 ]]; do
+	key="$1"
+	case "$key" in
+	-v|--verbose)
+		verbose="1"
+	;;
+esac
+shift
+done
 
 # Start time counter of process
 start_process_time=$(date +%s)
