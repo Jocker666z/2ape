@@ -221,7 +221,9 @@ done
 }
 # Monkey's Audio - Compress
 compress_ape() {
-f="0"
+local compress_counter
+
+compress_counter="0"
 for file in "${lst_audio_wav_decoded[@]}"; do
 	# Compress ape
 	(
@@ -236,11 +238,11 @@ for file in "${lst_audio_wav_decoded[@]}"; do
 	fi
 	if ! [[ "$verbose" = "1" ]]; then
 		# Progress
-		f=$((f+1))
+		compress_counter=$((compress_counter+1))
 		if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
-			echo -ne "${f}/${#lst_audio_wav_decoded[@]} ape file is being compressed"\\r
+			echo -ne "${compress_counter}/${#lst_audio_wav_decoded[@]} ape file is being compressed"\\r
 		else
-			echo -ne "${f}/${#lst_audio_wav_decoded[@]} ape files are being compressed"\\r
+			echo -ne "${compress_counter}/${#lst_audio_wav_decoded[@]} ape files are being compressed"\\r
 		fi
 	fi
 done
@@ -250,9 +252,9 @@ wait
 if ! [[ "$verbose" = "1" ]]; then
 	tput hpa 0; tput el
 	if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
-		echo "${f} ape file compressed"
+		echo "${compress_counter} ape file compressed"
 	else
-		echo "${f} ape files compressed"
+		echo "${compress_counter} ape files compressed"
 	fi
 fi
 
@@ -415,7 +417,7 @@ if (( "${#lst_audio_src[@]}" )); then
 	fi
 	# Print all files stats
 	echo
-	echo "${#lst_audio_ape_compressed[@]}/${#lst_audio_src[@]} file(s) compressed to Monkey's Audio for a total for a total of ${total_target_files_size}Mb"
+	echo "${#lst_audio_ape_compressed[@]}/${#lst_audio_src[@]} file(s) compressed to Monkey's Audio for a total of ${total_target_files_size}Mb"
 	echo "A difference of ${total_diff_percentage}% from the source file(s) (${total_source_files_size}Mb)."
 	echo "Processing en: $(date +%D\ at\ %Hh%Mm) - Duration: ${time_formated}."
 	echo
@@ -504,6 +506,7 @@ search_source_files
 
 # Start main
 if (( "${#lst_audio_src[@]}" )); then
+	echo
 	echo "2ape start processing"
 	echo
 	echo "${#lst_audio_src[@]} source files found"
@@ -527,6 +530,7 @@ if (( "${#lst_audio_src[@]}" )); then
 	# Tag
 	tags_2_apev2
 	tag_ape
+	echo "${#lst_audio_ape_compressed[@]} ape files tagged"
 
 	# End
 	stop_process_time=$(date +%s)
