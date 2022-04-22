@@ -20,7 +20,19 @@
 # Search & populate array with source files
 search_source_files() {
 mapfile -t lst_audio_src < <(find "$PWD" -maxdepth 2 -type f -regextype posix-egrep \
-									-iregex '.*\.('$input_ext')$' 2>/dev/null | sort)
+								-iregex '.*\.('$input_ext')$' 2>/dev/null | sort)
+
+# Clean source array
+for i in "${!lst_audio_src[@]}"; do
+	# Keep only ALAC codec among m4a files
+	if [[ "${lst_audio_src[i]##*.}" = "m4a" ]]; then
+		codec_test=$(ffprobe -v error -select_streams a:0 \
+			-show_entries stream=codec_name -of csv=s=x:p=0 "${lst_audio_src[i]%.*}.m4a"  )
+		if [[ "$codec_test" != "alac" ]]; then
+			unset "lst_audio_src[$i]"
+		fi
+	fi
+done
 }
 # Verify source integrity
 test_source() {
@@ -181,6 +193,7 @@ lst_audio_ape_target_tags=()
 
 for file in "${lst_audio_ape_compressed[@]}"; do
 
+	# FLAC
 	if [[ -s "${file%.*}.flac" ]]; then
 		# Source file tags array
 		mapfile -t source_tag < <( metaflac "${file%.*}.flac" --export-tags-to=- )
@@ -205,6 +218,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 			fi
 		fi
 
+	# WAVPACK
 	elif [[ -s "${file%.*}.wv" ]]; then
 		# Source file tags array
 		mapfile -t source_tag_temp < <( wvtag -q -l "${file%.*}.wv" \
@@ -216,6 +230,31 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 			wavpack_tag_parsing_2=$(echo "${source_tag_temp[$i]}" | cut -f2- -d' ' | sed 's/^ *//')
 			source_tag+=( "${wavpack_tag_parsing_1}=${wavpack_tag_parsing_2}" )
 		done
+
+	# ALAC
+	elif [[ -s "${file%.*}.m4a" ]]; then
+		# Source file tags array
+		mapfile -t source_tag < <( ffprobe -v error -show_entries stream_tags:format_tags \
+									-of default=noprint_wrappers=1 "${file%.*}.m4a" )
+		# Clean array
+		for i in "${!source_tag[@]}"; do
+			source_tag[$i]="${source_tag[$i]//TAG:/}"
+		done
+		# Try to extract cover, if no cover in directory
+		if [[ ! -e "${file%/*}"/cover.jpg ]] \
+		&& [[ ! -e "${file%/*}"/cover.png ]]; then
+			cover_test=$(ffprobe -v error -select_streams v:0 \
+						-show_entries stream=codec_name -of csv=s=x:p=0 "${file%.*}.m4a")
+			if [[ -n "$cover_test" ]]; then
+				if [[ "$cover_test" = "png" ]]; then
+					cover_ext="png"
+				elif [[ "$cover_test" = *"jpeg"* ]]; then
+					cover_ext="jpg"
+				fi
+				ffmpeg $ffmpeg_log_lvl -n -i "${file%.*}.m4a" \
+					"${file%/*}"/cover."$cover_ext" 2>/dev/null
+			fi
+		fi
 	fi
 
 	# Remove incompatible or not desired tag
@@ -275,7 +314,24 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]="${source_tag[$i]//TRACKNUMBER=/Track=}"
 		source_tag[$i]="${source_tag[$i]//WEBSITE=/Weblink=}"
 		source_tag[$i]="${source_tag[$i]//WRITER=/Writer=}"
-		# Substitution fix
+		# ID3v2
+		source_tag[$i]="${source_tag[$i]//Acoustid Id=/ACOUSTID_ID=}"
+		source_tag[$i]="${source_tag[$i]//arranger=/Arranger=}"
+		source_tag[$i]="${source_tag[$i]//description=/Comment=}"
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Id=/MUSICBRAINZ_ALBUMID=}"
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Status=/MUSICBRAINZ_ALBUMSTATUS=}"
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Type=/MUSICBRAINZ_ALBUMTYPE=}"
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Artist Id=/MUSICBRAINZ_ARTISTID=}"
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Artist Id=/MUSICBRAINZ_ARTISTID=}"
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Release Country=/RELEASECOUNTRY=}"
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Release Group Id=/MUSICBRAINZ_RELEASEGROUPID=}"
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Release Track Id=/MUSICBRAINZ_RELEASETRACKID=}"
+		source_tag[$i]="${source_tag[$i]//TBPM=/BPM=}"
+		source_tag[$i]="${source_tag[$i]//TEXT=/Lyricist=}"
+		# iTune
+		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
+		# Other fix
 		source_tag[$i]="${source_tag[$i]//album_artist=/Album Artist=}"
 	done
 
@@ -527,10 +583,12 @@ export PATH=$PATH:/home/$USER/.local/bin
 # Nb process parrallel (nb of processor)
 nproc=$(nproc --all)
 # Input extention available
-input_ext="flac|wv"
+input_ext="flac|m4a|wv"
 # Monkey's Audio
 mac_version="Monkey's Audio $(mac 2>&1 | head -1 | awk -F"[()]" '{print $2}')"
 mac_compress_arg="-c5000"
+# ALAC
+ffmpeg_log_lvl="-hide_banner -loglevel panic -nostats"
 # FLAC
 flac_test_arg="--no-md5-sum --no-warnings-as-errors -s -t"
 flac_fix_arg="--totally-silent -f --verify --decode-through-errors"
@@ -539,19 +597,50 @@ flac_decode_arg="--totally-silent -f -d"
 wavpack_test_arg="-q -v"
 wavpack_decode_arg="-q"
 # Tag
+# Blacklist doc by order of appearance
+# wavpack specific:
+#  * APEv2 tag items (head of wvtag output)
+# ffmpeg specific:
+#  * encoder
+#  * compatible_brands
+#  * language
+#  * handler_name
+#  * major_brand
+#  * minor_version
+#  * vendor_id
+# vorbiscomment specific
+# ID3v2 specific
+# iTune specific
 APEv2_blacklist=(
 	'APEv2 tag items'
-	'DISCTOTAL'
 	'encoder'
+	'compatible_brands'
+	'language'
+	'handler_name'
+	'major_brand'
+	'minor_version'
+	'vendor_id'
+	'DISCTOTAL'
 	'ENCODER'
 	'ENCODERSETTINGS'
 	'FINGERPRINT'
 	'LENGTH'
 	'MUSICBRAINZ_ORIGINALARTISTID'
 	'MUSICBRAINZ_ORIGINALALBUMID'
+	'originaldate'
+	'ORIGINALDATE'
 	'TOTALDISCS'
 	'TRACKTOTAL'
 	'TOTALTRACKS'
+	'MusicMagic Fingerprint'
+	'MusicBrainz Original Artist Id'
+	'MusicBrainz Original Album Id'
+	'fingerprint'
+	'pcst'
+	'pcst'
+	'purl'
+	'sosn'
+	'tvsh'
 )
 # Command arguments
 while [[ $# -gt 0 ]]; do
