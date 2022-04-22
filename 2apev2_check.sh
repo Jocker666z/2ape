@@ -64,7 +64,7 @@ for file in "${lst_audio_src[@]}"; do
 
 # Tag blacklist
 # Something waste specific:
-#  * ACCURATERIPRESULT
+#  * AccurateRipDiscID
 #  * ....
 #  * wwww
 # wavpack specific:
@@ -77,6 +77,8 @@ for file in "${lst_audio_src[@]}"; do
 # ID3v2 specific
 # iTune specific
 APEv2_blacklist=(
+	'AccurateRipDiscID'
+	'AccurateRipResult'
 	'ACCURATERIPRESULT'
 	'ALBUM ARTIST'
 	'CDTOC'

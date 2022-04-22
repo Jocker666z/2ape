@@ -709,7 +709,7 @@ wavpack_test_arg="-q -v"
 wavpack_decode_arg="-q"
 # Tag blacklist
 # Something waste specific:
-#  * ACCURATERIPRESULT
+#  * AccurateRipDiscID
 #  * ....
 #  * wwww
 # wavpack specific:
@@ -722,6 +722,8 @@ wavpack_decode_arg="-q"
 # ID3v2 specific
 # iTune specific
 APEv2_blacklist=(
+	'AccurateRipDiscID'
+	'AccurateRipResult'
 	'ACCURATERIPRESULT'
 	'ALBUM ARTIST'
 	'CDTOC'
