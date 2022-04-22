@@ -2,7 +2,7 @@
 
 Various lossless to Monkey's Audio while keeping the tags.
 
-Lossless audio source supported: FLAC, WAVPACK
+Lossless audio source supported: ALAC, FLAC, WAVPACK
 
 --------------------------------------------------------------------------------------------------
 ## Install & update

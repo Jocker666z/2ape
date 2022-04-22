@@ -77,6 +77,19 @@ for file in "${lst_audio_src[@]}"; do
 		else
 			lst_audio_src_pass+=( "$file" )
 		fi
+
+	# ALAC - Verify integrity
+	elif [[ "${file##*.}" = "m4a" ]]; then
+		# Tests & populate file in arrays
+		## File test & error log generation
+		tmp_error=$(mktemp)
+		ffmpeg -v error -i "$file" -max_muxing_queue_size 9999 -f null - 2>"$tmp_error"
+		if [ -s "$tmp_error" ]; then
+			cp "$tmp_error" "${file}.decode_error.log"
+			lst_audio_src_rejected+=( "$file" )
+		else
+			lst_audio_src_pass+=( "$file" )
+		fi
 	fi
 
 	# Progress
@@ -143,6 +156,29 @@ for file in "${lst_audio_src_pass[@]}"; do
 	if [[ "${file##*.}" = "wv" ]]; then
 		(
 		wvunpack $wavpack_decode_arg "$file"
+		) &
+		if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
+			wait -n
+		fi
+
+		# Progress
+		if ! [[ "$verbose" = "1" ]]; then
+			decode_counter=$((decode_counter+1))
+			if [[ "${#lst_audio_src_pass[@]}" = "1" ]]; then
+				echo -ne "${decode_counter}/${#lst_audio_src_pass[@]} source file decoded"\\r
+			else
+				echo -ne "${decode_counter}/${#lst_audio_src_pass[@]} source files decoded"\\r
+			fi
+		fi
+	fi
+done
+wait
+
+# ALAC - Decode
+for file in "${lst_audio_src_pass[@]}"; do
+	if [[ "${file##*.}" = "m4a" ]]; then
+		(
+		ffmpeg $ffmpeg_log_lvl -y -i "$file" "${file%.*}.wav"
 		) &
 		if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
 			wait -n
