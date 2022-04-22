@@ -223,14 +223,13 @@ local wavpack_tag_parsing_1
 local wavpack_tag_parsing_2
 local grab_tag_counter
 
-# Reset array, common to all file types
-source_tag=()
-source_tag_temp=()
-lst_audio_ape_target_tags=()
-
 grab_tag_counter="0"
 
 for file in "${lst_audio_ape_compressed[@]}"; do
+
+	# Reset
+	source_tag=()
+	source_tag_temp=()
 
 	# FLAC
 	if [[ -s "${file%.*}.flac" ]]; then
