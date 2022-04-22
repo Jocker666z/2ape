@@ -315,29 +315,34 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 
 	# Substitution
 	for i in "${!source_tag[@]}"; do
-		# Waste fix
-		source_tag[$i]="${source_tag[$i]//album_artist=/Album Artist=}"
-		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
-
 		# Special case - match with the word
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bALBUM=\b/Album=/g")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbum=\b/Album=/g")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bAlbumartistsort=\b/ALBUMARTISTSORT=/g")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bARTIST=\b/Artist=/g")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bARTISTS=\b/Artists=/g")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/g")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/g")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdisc=\b/Disc=/g")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/g")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/g")
 
 		# MusicBrainz internal
+		source_tag[$i]="${source_tag[$i]//albumartistsort=/ALBUMARTISTSORT=}"
+		source_tag[$i]="${source_tag[$i]//artistsort=/ARTISTSORT=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_artistid=/MUSICBRAINZ_ARTISTID=}"
+		source_tag[$i]="${source_tag[$i]//Musicbrainz_Albumid=/MUSICBRAINZ_ALBUMID=}"
+		source_tag[$i]="${source_tag[$i]//Musicbrainz_Artistid=/MUSICBRAINZ_ARTISTID=}"
+		source_tag[$i]="${source_tag[$i]//Musicbrainz_Releasegroupid=/MUSICBRAINZ_RELEASEGROUPID=}"
+		source_tag[$i]="${source_tag[$i]//Originalyear=/ORIGINALYEAR=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_album_gain=/REPLAYGAIN_ALBUM_GAIN=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_album_peak=/REPLAYGAIN_ALBUM_PEAK=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_track_gain=/REPLAYGAIN_TRACK_GAIN=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_track_peak=/REPLAYGAIN_TRACK_PEAK=}"
 
 		# vorbis
-		source_tag[$i]="${source_tag[$i]//ALBUM=/Album=}"
 		source_tag[$i]="${source_tag[$i]//ALBUMARTIST=/Album Artist=}"
 		source_tag[$i]="${source_tag[$i]//ARRANGER=/Arranger=}"
-		source_tag[$i]="${source_tag[$i]//ARTIST=/Artist=}"
-		source_tag[$i]="${source_tag[$i]//ARTISTS=/Artists=}"
 		source_tag[$i]="${source_tag[$i]//BARCODE=/Barcode=}"
 		source_tag[$i]="${source_tag[$i]//CATALOGNUMBER=/CatalogNumber=}"
 		source_tag[$i]="${source_tag[$i]//COMMENT=/Comment=}"
@@ -373,6 +378,9 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]="${source_tag[$i]//TRACKNUMBER=/Track=}"
 		source_tag[$i]="${source_tag[$i]//WEBSITE=/Weblink=}"
 		source_tag[$i]="${source_tag[$i]//WRITER=/Writer=}"
+		# Vorbis malformed
+		source_tag[$i]="${source_tag[$i]//musicbrainz_releasetrackid=/MUSICBRAINZ_RELEASETRACKID=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_trackid=/MUSICBRAINZ_RELEASETRACKID=}"
 		# ID3v2
 		source_tag[$i]="${source_tag[$i]//Acoustid Id=/ACOUSTID_ID=}"
 		source_tag[$i]="${source_tag[$i]//arranger=/Arranger=}"
@@ -390,6 +398,9 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]="${source_tag[$i]//TEXT=/Lyricist=}"
 		# iTune
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
+		# Waste fix
+		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//g")
 	done
 
 	# Argument 
@@ -725,7 +736,9 @@ APEv2_blacklist=(
 	'AccurateRipDiscID'
 	'AccurateRipResult'
 	'ACCURATERIPRESULT'
+	'album_artist'
 	'ALBUM ARTIST'
+	'Artistsort'
 	'CDTOC'
 	'CodingHistory'
 	'ENSEMBLE'
@@ -773,6 +786,7 @@ APEv2_blacklist=(
 	'purl'
 	'sosn'
 	'tvsh'
+	'Originaldate'
 )
 # Command arguments
 while [[ $# -gt 0 ]]; do
