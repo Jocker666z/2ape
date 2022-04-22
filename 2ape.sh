@@ -22,6 +22,81 @@ search_source_files() {
 mapfile -t lst_audio_src < <(find "$PWD" -maxdepth 2 -type f -regextype posix-egrep \
 									-iregex '.*\.('$input_ext')$' 2>/dev/null | sort)
 }
+# Verify source integrity
+test_source() {
+local test_counter
+
+test_counter="0"
+
+for file in "${lst_audio_src[@]}"; do
+
+	# FLAC - Verify integrity
+	if [[ "${file##*.}" = "flac" ]]; then
+		# Tests & populate file in arrays
+		## File test & error log generation
+		tmp_error=$(mktemp)
+		flac $flac_test_arg "$file" 2>"$tmp_error"
+		if [ -s "$tmp_error" ]; then
+			# Try to fix file
+			flac $flac_fix_arg "$file"
+			# Re-test
+			flac $flac_test_arg "$file" 2>"$tmp_error"
+			# If no valid 2 times exclude
+			if [ -s "$tmp_error" ]; then
+				cp "$tmp_error" "${file}.decode_error.log"
+				lst_audio_src_rejected+=( "$file" )
+			else
+				lst_audio_src_pass+=( "$file" )
+			fi
+		else
+			lst_audio_src_pass+=( "$file" )
+		fi
+
+	# WAVPACK - Verify integrity
+	elif [[ "${file##*.}" = "wv" ]]; then
+		# Tests & populate file in arrays
+		## File test & error log generation
+		tmp_error=$(mktemp)
+		#wvunpack -q -v "$file" 2>"$tmp_error"
+		wvunpack $wavpack_test_arg "$file" 2>"$tmp_error"
+		if [ -s "$tmp_error" ]; then
+			cp "$tmp_error" "${file}.decode_error.log"
+			lst_audio_src_rejected+=( "$file" )
+		else
+			lst_audio_src_pass+=( "$file" )
+		fi
+	fi
+
+	# Progress
+	if ! [[ "$verbose" = "1" ]]; then
+		test_counter=$((test_counter+1))
+		if [[ "${#lst_audio_src[@]}" = "1" ]]; then
+			echo -ne "${test_counter}/${#lst_audio_src[@]} source file is being tested"\\r
+		else
+			echo -ne "${test_counter}/${#lst_audio_src[@]} source files are being tested"\\r
+		fi
+	fi
+
+done
+
+# Progress end
+if ! [[ "$verbose" = "1" ]]; then
+	tput hpa 0; tput el
+	if (( "${#lst_audio_src_rejected[@]}" )); then
+		if [[ "${#lst_audio_src[@]}" = "1" ]]; then
+			echo "${test_counter} source file tested ~ ${#lst_audio_src_rejected[@]} in error (log generated)"
+		else
+			echo "${test_counter} source files tested ~ ${#lst_audio_src_rejected[@]} in error (log generated)"
+		fi
+	else
+		if [[ "${#lst_audio_src[@]}" = "1" ]]; then
+			echo "${test_counter} source file tested"
+		else
+			echo "${test_counter} source files tested"
+		fi
+	fi
+fi
+}
 # Decode source
 decode_source() {
 local decode_counter
@@ -90,53 +165,6 @@ for file in "${lst_audio_src_pass[@]}"; do
 	lst_audio_wav_decoded+=( "${file%.*}.wav" )
 done
 }
-
-# FLAC - Verify integrity
-test_flac() {
-for file in "${lst_audio_src[@]}"; do
-	if [[ "${file##*.}" = "flac" ]]; then
-		# Tests & populate file in arrays
-		## File test & error log generation
-		tmp_error=$(mktemp)
-		flac $flac_test_arg "$file" 2>"$tmp_error"
-		if [ -s "$tmp_error" ]; then
-			# Try to fix file
-			flac $flac_fix_arg "$file"
-			# Re-test
-			flac $flac_test_arg "$file" 2>"$tmp_error"
-			# If no valid 2 times exclude
-			if [ -s "$tmp_error" ]; then
-				cp "$tmp_error" "${file}.decode_error.log"
-				lst_audio_src_rejected+=( "$file" )
-			else
-				lst_audio_src_pass+=( "$file" )
-			fi
-		else
-			lst_audio_src_pass+=( "$file" )
-		fi
-	fi
-done
-}
-# WAVPACK - Verify integrity
-test_wavpack() {
-for file in "${lst_audio_src[@]}"; do
-	if [[ "${file##*.}" = "wv" ]]; then
-		# Tests & populate file in arrays
-		## File test & error log generation
-		tmp_error=$(mktemp)
-		#wvunpack -q -v "$file" 2>"$tmp_error"
-		wvunpack $wavpack_test_arg "$file" 2>"$tmp_error"
-		if [ -s "$tmp_error" ]; then
-			cp "$tmp_error" "${file}.decode_error.log"
-			lst_audio_src_rejected+=( "$file" )
-		else
-			lst_audio_src_pass+=( "$file" )
-		fi
-	fi
-done
-}
-
-
 # Convert tag to apev2
 tags_2_apev2() {
 local cover_test
@@ -550,12 +578,7 @@ if (( "${#lst_audio_src[@]}" )); then
 	echo "${#lst_audio_src[@]} source files found"
 
 	# Test
-	test_flac
-	test_wavpack
-	echo "${#lst_audio_src_pass[@]} validated source files"
-	if (( "${#lst_audio_src_rejected[@]}" )); then
-		echo "${#lst_audio_src_rejected[@]} rejected source files"
-	fi
+	test_source
 
 	# Decode
 	decode_source
