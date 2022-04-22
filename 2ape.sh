@@ -311,6 +311,17 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 
 	# Substitution
 	for i in "${!source_tag[@]}"; do
+		# Waste fix
+		source_tag[$i]="${source_tag[$i]//album_artist=/Album Artist=}"
+		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
+
+		# Special case - match with the word
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbum=\b/Album=/g")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/g")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdisc=\b/Disc=/g")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/g")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/g")
+
 		# Substitution vorbis
 		source_tag[$i]="${source_tag[$i]//ALBUM=/Album=}"
 		source_tag[$i]="${source_tag[$i]//ALBUMARTIST=/Album Artist=}"
@@ -369,11 +380,6 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]="${source_tag[$i]//TEXT=/Lyricist=}"
 		# iTune
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
-		# Waste fix
-		source_tag[$i]="${source_tag[$i]//album_artist=/Album Artist=}"
-		source_tag[$i]="${source_tag[$i]//disc=/Disc=}"
-		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
-		source_tag[$i]="${source_tag[$i]//track=/Track=}"
 	done
 
 	# Argument 
@@ -691,8 +697,7 @@ flac_decode_arg="--totally-silent -f -d"
 # WAVPACK
 wavpack_test_arg="-q -v"
 wavpack_decode_arg="-q"
-# Tag
-# Tag
+# Tag blacklist
 # Something waste specific:
 #  * ACCURATERIPRESULT
 #  * ....
