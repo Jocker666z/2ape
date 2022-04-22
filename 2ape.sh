@@ -505,6 +505,7 @@ local file_diff_percentage
 local file_path_truncate
 local total_source_files_size
 local total_target_files_size
+local total_diff_size
 local total_diff_percentage
 
 if (( "${#lst_audio_src[@]}" )); then
@@ -524,6 +525,7 @@ if (( "${#lst_audio_src[@]}" )); then
 	# Total files size stats
 	total_source_files_size=$(calc_files_size "${lst_audio_src_pass[@]}")
 	total_target_files_size=$(calc_files_size "${lst_audio_ape_compressed[@]}")
+	total_diff_size=$(bc <<< "scale=0; ($total_target_files_size - $total_source_files_size)")
 	total_diff_percentage=$(calc_percent "$total_source_files_size" "$total_target_files_size")
 
 	echo
@@ -540,7 +542,7 @@ if (( "${#lst_audio_src[@]}" )); then
 	# Print all files stats
 	echo
 	echo "${#lst_audio_ape_compressed[@]}/${#lst_audio_src[@]} file(s) compressed to Monkey's Audio for a total of ${total_target_files_size}Mb"
-	echo "A difference of ${total_diff_percentage}% from the source file(s) (${total_source_files_size}Mb)."
+	echo "${total_diff_percentage}% difference with the source files, ${total_diff_size}Mb on ${total_source_files_size}Mb."
 	echo "Processing en: $(date +%D\ at\ %Hh%Mm) - Duration: ${time_formated}."
 	echo
 fi
