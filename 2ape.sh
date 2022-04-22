@@ -331,8 +331,9 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]="${source_tag[$i]//TEXT=/Lyricist=}"
 		# iTune
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
-		# Other fix
+		# Waste fix
 		source_tag[$i]="${source_tag[$i]//album_artist=/Album Artist=}"
+		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
 	done
 
 	# Argument 
@@ -541,7 +542,7 @@ if (( "${#lst_audio_src[@]}" )); then
 	fi
 	# Print all files stats
 	echo
-	echo "${#lst_audio_ape_compressed[@]}/${#lst_audio_src[@]} file(s) compressed to Monkey's Audio for a total of ${total_target_files_size}Mb"
+	echo "${#lst_audio_ape_compressed[@]}/${#lst_audio_src[@]} file(s) compressed to Monkey's Audio for a total of ${total_target_files_size}Mb."
 	echo "${total_diff_percentage}% difference with the source files, ${total_diff_size}Mb on ${total_source_files_size}Mb."
 	echo "Processing en: $(date +%D\ at\ %Hh%Mm) - Duration: ${time_formated}."
 	echo
@@ -599,21 +600,32 @@ flac_decode_arg="--totally-silent -f -d"
 wavpack_test_arg="-q -v"
 wavpack_decode_arg="-q"
 # Tag
-# Blacklist doc by order of appearance
+# Tag
+# Something waste specific:
+#  * ACCURATERIPRESULT
+#  * ....
+#  * UPC
 # wavpack specific:
 #  * APEv2 tag items (head of wvtag output)
 # ffmpeg specific:
 #  * encoder
-#  * compatible_brands
-#  * language
-#  * handler_name
-#  * major_brand
-#  * minor_version
+#  * ...
 #  * vendor_id
 # vorbiscomment specific
 # ID3v2 specific
 # iTune specific
 APEv2_blacklist=(
+	'ACCURATERIPRESULT'
+	'CDTOC'
+	'CodingHistory'
+	'OrigDate'
+	'Originator'
+	'OrigReference'
+	'OrigTime'
+	'RELEASE Year'
+	'TOOL VERSION'
+	'TOOL NAME'
+	'UPC'
 	'APEv2 tag items'
 	'encoder'
 	'compatible_brands'
@@ -664,7 +676,7 @@ search_source_files
 # Start main
 if (( "${#lst_audio_src[@]}" )); then
 	echo
-	echo "2ape start processing"
+	echo "2ape start processing \(^o^)/"
 	echo
 	echo "${#lst_audio_src[@]} source files found"
 
