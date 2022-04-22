@@ -322,6 +322,12 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/g")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/g")
 
+		# MusicBrainz internal
+		source_tag[$i]="${source_tag[$i]//replaygain_album_gain=/REPLAYGAIN_ALBUM_GAIN=}"
+		source_tag[$i]="${source_tag[$i]//replaygain_album_peak=/REPLAYGAIN_ALBUM_PEAK=}"
+		source_tag[$i]="${source_tag[$i]//replaygain_track_gain=/REPLAYGAIN_TRACK_GAIN=}"
+		source_tag[$i]="${source_tag[$i]//replaygain_track_peak=/REPLAYGAIN_TRACK_PEAK=}"
+
 		# Substitution vorbis
 		source_tag[$i]="${source_tag[$i]//ALBUM=/Album=}"
 		source_tag[$i]="${source_tag[$i]//ALBUMARTIST=/Album Artist=}"

@@ -136,7 +136,6 @@ APEv2_blacklist=(
 	# Add encoder ape tags
 	source_tag+=( "EncodedBy=${mac_version}" )
 	source_tag+=( "EncoderSettings=${mac_compress_arg}" )
-	source_tag+=( "Subtitle=${mac_compress_arg}" )
 
 	# Substitution
 	for i in "${!source_tag[@]}"; do
@@ -151,7 +150,13 @@ APEv2_blacklist=(
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/g")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/g")
 
-		# Substitution vorbis
+		# MusicBrainz internal
+		source_tag[$i]="${source_tag[$i]//replaygain_album_gain=/REPLAYGAIN_ALBUM_GAIN=}"
+		source_tag[$i]="${source_tag[$i]//replaygain_album_peak=/REPLAYGAIN_ALBUM_PEAK=}"
+		source_tag[$i]="${source_tag[$i]//replaygain_track_gain=/REPLAYGAIN_TRACK_GAIN=}"
+		source_tag[$i]="${source_tag[$i]//replaygain_track_peak=/REPLAYGAIN_TRACK_PEAK=}"
+
+		# vorbis
 		source_tag[$i]="${source_tag[$i]//ALBUM=/Album=}"
 		source_tag[$i]="${source_tag[$i]//ALBUMARTIST=/Album Artist=}"
 		source_tag[$i]="${source_tag[$i]//ARRANGER=/Arranger=}"
@@ -211,7 +216,7 @@ APEv2_blacklist=(
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
 	done
 
-	echo "$file"
+	echo "$file" | rev | cut -d'/' -f-2 | rev
 	for i in "${!source_tag[@]}"; do
 		echo "${source_tag[i]}"
 	done
