@@ -384,7 +384,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		if [[ "${#lst_audio_ape_compressed[@]}" = "1" ]]; then
 			echo -ne "${grab_tag_counter}/${#lst_audio_ape_compressed[@]} source file is being converted tags"\\r
 		else
-			echo -ne "${grab_tag_counter}/${#lst_audio_ape_compressed[@]} source files is being converted tags"\\r
+			echo -ne "${grab_tag_counter}/${#lst_audio_ape_compressed[@]} source files are being converted tags"\\r
 		fi
 	fi
 done
