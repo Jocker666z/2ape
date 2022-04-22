@@ -715,6 +715,7 @@ APEv2_blacklist=(
 	'RELEASE Year'
 	'TOOL VERSION'
 	'TOOL NAME'
+	'TimeReference'
 	'UPC'
 	'wwww'
 	'APEv2 tag items'
