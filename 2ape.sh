@@ -472,9 +472,9 @@ for i in "${!lst_audio_ape_compressed[@]}"; do
 		tag_counter=$((tag_counter+1))
 		if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
 			echo "${#lst_audio_ape_compressed[@]} ape files tagged"
-			echo -ne "${compress_counter}/${#lst_audio_ape_compressed[@]} ape file is being tagged"\\r
+			echo -ne "${tag_counter}/${#lst_audio_ape_compressed[@]} ape file is being tagged"\\r
 		else
-			echo -ne "${compress_counter}/${#lst_audio_ape_compressed[@]} ape files are being tagged"\\r
+			echo -ne "${tag_counter}/${#lst_audio_ape_compressed[@]} ape files are being tagged"\\r
 		fi
 	fi
 done
