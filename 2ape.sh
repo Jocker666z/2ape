@@ -328,7 +328,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]="${source_tag[$i]//replaygain_track_gain=/REPLAYGAIN_TRACK_GAIN=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_track_peak=/REPLAYGAIN_TRACK_PEAK=}"
 
-		# Substitution vorbis
+		# vorbis
 		source_tag[$i]="${source_tag[$i]//ALBUM=/Album=}"
 		source_tag[$i]="${source_tag[$i]//ALBUMARTIST=/Album Artist=}"
 		source_tag[$i]="${source_tag[$i]//ARRANGER=/Arranger=}"
@@ -723,11 +723,16 @@ APEv2_blacklist=(
 	'CDTOC'
 	'CodingHistory'
 	'ENSEMBLE'
+	'Limited Edition'
 	'OrigDate'
 	'Originator'
 	'OrigReference'
 	'OrigTime'
+	'Release Type'
 	'RELEASE Year'
+	'Retail Date'
+	'Rip Date'
+	'Ripping Tool'
 	'TOOL VERSION'
 	'TOOL NAME'
 	'TimeReference'
