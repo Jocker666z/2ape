@@ -12,4 +12,4 @@ Lossless audio source supported: ALAC, FLAC, WAVPACK
 `ffmpeg flac monkeys-audio wavpack`
 
 ## Use
-Launch `2ape` command in directory with source files, the search depth is two child directories.
+Launch `2ape` command in directory with source files, the search depth is tree child directories.

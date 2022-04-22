@@ -19,7 +19,7 @@
 
 # Search & populate array with source files
 search_source_files() {
-mapfile -t lst_audio_src < <(find "$PWD" -maxdepth 2 -type f -regextype posix-egrep \
+mapfile -t lst_audio_src < <(find "$PWD" -maxdepth 3 -type f -regextype posix-egrep \
 								-iregex '.*\.('$input_ext')$' 2>/dev/null | sort)
 
 # Clean source array
