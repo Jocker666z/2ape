@@ -371,7 +371,9 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
 		# Waste fix
 		source_tag[$i]="${source_tag[$i]//album_artist=/Album Artist=}"
+		source_tag[$i]="${source_tag[$i]//disc=/Disc=}"
 		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
+		source_tag[$i]="${source_tag[$i]//track=/Track=}"
 	done
 
 	# Argument 
