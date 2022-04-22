@@ -706,8 +706,10 @@ wavpack_decode_arg="-q"
 # iTune specific
 APEv2_blacklist=(
 	'ACCURATERIPRESULT'
+	'ALBUM ARTIST'
 	'CDTOC'
 	'CodingHistory'
+	'ENSEMBLE'
 	'OrigDate'
 	'Originator'
 	'OrigReference'
