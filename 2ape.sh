@@ -22,6 +22,75 @@ search_source_files() {
 mapfile -t lst_audio_src < <(find "$PWD" -maxdepth 2 -type f -regextype posix-egrep \
 									-iregex '.*\.('$input_ext')$' 2>/dev/null | sort)
 }
+# Decode source
+decode_source() {
+local decode_counter
+
+decode_counter="0"
+
+# FLAC - Decode
+for file in "${lst_audio_src_pass[@]}"; do
+	if [[ "${file##*.}" = "flac" ]]; then
+		(
+		flac $flac_decode_arg "$file"
+		) &
+		if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
+			wait -n
+		fi
+
+		# Progress
+		if ! [[ "$verbose" = "1" ]]; then
+			decode_counter=$((decode_counter+1))
+			if [[ "${#lst_audio_src_pass[@]}" = "1" ]]; then
+				echo -ne "${decode_counter}/${#lst_audio_src_pass[@]} source file is being decoded"\\r
+			else
+				echo -ne "${decode_counter}/${#lst_audio_src_pass[@]} source files are being decoded"\\r
+			fi
+		fi
+	fi
+done
+wait
+
+# WAVPACK - Decode
+for file in "${lst_audio_src_pass[@]}"; do
+	if [[ "${file##*.}" = "wv" ]]; then
+		(
+		wvunpack $wavpack_decode_arg "$file"
+		) &
+		if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
+			wait -n
+		fi
+
+		# Progress
+		if ! [[ "$verbose" = "1" ]]; then
+			decode_counter=$((decode_counter+1))
+			if [[ "${#lst_audio_src_pass[@]}" = "1" ]]; then
+				echo -ne "${decode_counter}/${#lst_audio_src_pass[@]} source file decoded"\\r
+			else
+				echo -ne "${decode_counter}/${#lst_audio_src_pass[@]} source files decoded"\\r
+			fi
+		fi
+	fi
+done
+wait
+
+# Progress end
+if ! [[ "$verbose" = "1" ]]; then
+	tput hpa 0; tput el
+	if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
+		echo "${decode_counter} source file decoded"
+	else
+		echo "${decode_counter} source files decoded"
+	fi
+fi
+
+# Ape target ape array
+for file in "${lst_audio_src_pass[@]}"; do
+	# Array of ape target
+	lst_audio_wav_decoded+=( "${file%.*}.wav" )
+done
+}
+
 # FLAC - Verify integrity
 test_flac() {
 for file in "${lst_audio_src[@]}"; do
@@ -48,23 +117,6 @@ for file in "${lst_audio_src[@]}"; do
 	fi
 done
 }
-# FLAC - Decode
-decode_flac() {
-for file in "${lst_audio_src_pass[@]}"; do
-	if [[ "${file##*.}" = "flac" ]]; then
-		# List of wav target
-		lst_audio_wav_decoded+=( "${file%.*}.wav" )
-		# Decode to wav
-		(
-		flac $flac_decode_arg "$file"
-		) &
-		if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
-			wait -n
-		fi
-	fi
-done
-wait
-}
 # WAVPACK - Verify integrity
 test_wavpack() {
 for file in "${lst_audio_src[@]}"; do
@@ -83,23 +135,8 @@ for file in "${lst_audio_src[@]}"; do
 	fi
 done
 }
-# WAVPACK - Decode
-decode_wavpack() {
-for file in "${lst_audio_src_pass[@]}"; do
-	if [[ "${file##*.}" = "wv" ]]; then
-		# List of wav target
-		lst_audio_wav_decoded+=( "${file%.*}.wav" )
-		# Decode to wav
-		(
-		wvunpack $wavpack_decode_arg "$file"
-		) &
-		if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
-			wait -n
-		fi
-	fi
-done
-wait
-}
+
+
 # Convert tag to apev2
 tags_2_apev2() {
 local cover_test
@@ -236,8 +273,9 @@ for file in "${lst_audio_wav_decoded[@]}"; do
 	if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
 		wait -n
 	fi
+
+	# Progress
 	if ! [[ "$verbose" = "1" ]]; then
-		# Progress
 		compress_counter=$((compress_counter+1))
 		if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
 			echo -ne "${compress_counter}/${#lst_audio_wav_decoded[@]} ape file is being compressed"\\r
@@ -258,7 +296,7 @@ if ! [[ "$verbose" = "1" ]]; then
 	fi
 fi
 
-# Clean
+# Clean + tag target array
 for file in "${lst_audio_wav_decoded[@]}"; do
 	# Array of ape target
 	lst_audio_ape_compressed+=( "${file%.*}.ape" )
@@ -520,9 +558,7 @@ if (( "${#lst_audio_src[@]}" )); then
 	fi
 
 	# Decode
-	decode_flac
-	decode_wavpack
-	echo "${#lst_audio_wav_decoded[@]} source files decoded"
+	decode_source
 
 	# Compress
 	compress_ape
