@@ -164,7 +164,7 @@ wait
 # Progress end
 if ! [[ "$verbose" = "1" ]]; then
 	tput hpa 0; tput el
-	if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
+	if [[ "${#lst_audio_src_pass[@]}" = "1" ]]; then
 		echo "${decode_counter} source file decoded"
 	else
 		echo "${decode_counter} source files decoded"
@@ -185,11 +185,14 @@ local cover_ext
 local tag_label
 local wavpack_tag_parsing_1
 local wavpack_tag_parsing_2
+local grab_tag_counter
 
 # Reset array, common to all file types
 source_tag=()
 source_tag_temp=()
 lst_audio_ape_target_tags=()
+
+grab_tag_counter="0"
 
 for file in "${lst_audio_ape_compressed[@]}"; do
 
@@ -339,13 +342,33 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 	# Argument 
 	lst_audio_ape_target_tags+=( "$(IFS='|';echo "${source_tag[*]}";IFS=$' \t\n')" )
 
+	# Progress
+	if ! [[ "$verbose" = "1" ]]; then
+		grab_tag_counter=$((grab_tag_counter+1))
+		if [[ "${#lst_audio_ape_compressed[@]}" = "1" ]]; then
+			echo -ne "${grab_tag_counter}/${#lst_audio_ape_compressed[@]} source file is being converted tags"\\r
+		else
+			echo -ne "${grab_tag_counter}/${#lst_audio_ape_compressed[@]} source files is being converted tags"\\r
+		fi
+	fi
 done
+
+# Progress end
+if ! [[ "$verbose" = "1" ]]; then
+	tput hpa 0; tput el
+	if [[ "${#lst_audio_ape_compressed[@]}" = "1" ]]; then
+		echo "${grab_tag_counter} source file converted tags"
+	else
+		echo "${grab_tag_counter} source files converted tags"
+	fi
+fi
 }
 # Monkey's Audio - Compress
 compress_ape() {
 local compress_counter
 
 compress_counter="0"
+
 for file in "${lst_audio_wav_decoded[@]}"; do
 	# Compress ape
 	(
@@ -392,13 +415,44 @@ done
 }
 # Monkey's Audio - Tag
 tag_ape() {
+local tag_counter
+
+tag_counter="0"
+
 for i in "${!lst_audio_ape_compressed[@]}"; do
+	(
 	if [[ "$verbose" = "1" ]]; then
 		mac "${lst_audio_ape_compressed[i]%.*}.ape" -t "${lst_audio_ape_target_tags[i]}"
 	else
 		mac "${lst_audio_ape_compressed[i]%.*}.ape" -t "${lst_audio_ape_target_tags[i]}" &>/dev/null
 	fi
+	) &
+	if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
+		wait -n
+	fi
+
+	# Progress
+	if ! [[ "$verbose" = "1" ]]; then
+		tag_counter=$((tag_counter+1))
+		if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
+			echo "${#lst_audio_ape_compressed[@]} ape files tagged"
+			echo -ne "${compress_counter}/${#lst_audio_ape_compressed[@]} ape file is being tagged"\\r
+		else
+			echo -ne "${compress_counter}/${#lst_audio_ape_compressed[@]} ape files are being tagged"\\r
+		fi
+	fi
 done
+wait
+
+# Progress end
+if ! [[ "$verbose" = "1" ]]; then
+	tput hpa 0; tput el
+	if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
+		echo "${tag_counter} ape file tagged"
+	else
+		echo "${tag_counter} ape files tagged"
+	fi
+fi
 }
 # Total size calculation in Mb - Input must be in bytes
 calc_files_size() {
@@ -526,7 +580,8 @@ if (( "${#lst_audio_src[@]}" )); then
 	# Total files size stats
 	total_source_files_size=$(calc_files_size "${lst_audio_src_pass[@]}")
 	total_target_files_size=$(calc_files_size "${lst_audio_ape_compressed[@]}")
-	total_diff_size=$(bc <<< "scale=0; ($total_target_files_size - $total_source_files_size)")
+	total_diff_size=$(bc <<< "scale=0; ($total_target_files_size - $total_source_files_size)" \
+						| sed -r 's/^(-?)\./\10./')
 	total_diff_percentage=$(calc_percent "$total_source_files_size" "$total_target_files_size")
 
 	echo
@@ -604,7 +659,7 @@ wavpack_decode_arg="-q"
 # Something waste specific:
 #  * ACCURATERIPRESULT
 #  * ....
-#  * UPC
+#  * wwww
 # wavpack specific:
 #  * APEv2 tag items (head of wvtag output)
 # ffmpeg specific:
@@ -626,6 +681,7 @@ APEv2_blacklist=(
 	'TOOL VERSION'
 	'TOOL NAME'
 	'UPC'
+	'wwww'
 	'APEv2 tag items'
 	'encoder'
 	'compatible_brands'
@@ -692,7 +748,6 @@ if (( "${#lst_audio_src[@]}" )); then
 	# Tag
 	tags_2_apev2
 	tag_ape
-	echo "${#lst_audio_ape_compressed[@]} ape files tagged"
 
 	# End
 	stop_process_time=$(date +%s)
