@@ -29,17 +29,22 @@ done
 
 for file in "${lst_audio_src[@]}"; do
 
+	start_all=$(($(date +%s%N)/1000000))
+
 	# Reset
 	source_tag=()
 	source_tag_temp=()
 
 	# FLAC
 	if [[ -s "${file%.*}.flac" ]]; then
+		start_flac_export=$(($(date +%s%N)/1000000))
 		# Source file tags array
 		mapfile -t source_tag < <( metaflac "${file%.*}.flac" --export-tags-to=- | sort )
+		stop_flac_export=$(($(date +%s%N)/1000000))
 
 	# WAVPACK
 	elif [[ -s "${file%.*}.wv" ]]; then
+		start_wv_export=$(($(date +%s%N)/1000000))
 		# Source file tags array
 		mapfile -t source_tag_temp < <( wvtag -q -l "${file%.*}.wv" \
 									| grep -v -e '^[[:space:]]*$' \
@@ -50,9 +55,11 @@ for file in "${lst_audio_src[@]}"; do
 			wavpack_tag_parsing_2=$(echo "${source_tag_temp[$i]}" | cut -f2- -d' ' | sed 's/^ *//')
 			source_tag+=( "${wavpack_tag_parsing_1}=${wavpack_tag_parsing_2}" )
 		done
+		stop_wv_export=$(($(date +%s%N)/1000000))
 
 	# ALAC
 	elif [[ -s "${file%.*}.m4a" ]]; then
+		start_m4a_export=$(($(date +%s%N)/1000000))
 		# Source file tags array
 		mapfile -t source_tag < <( ffprobe -v error -show_entries stream_tags:format_tags \
 									-of default=noprint_wrappers=1 "${file%.*}.m4a" | sort )
@@ -60,6 +67,7 @@ for file in "${lst_audio_src[@]}"; do
 		for i in "${!source_tag[@]}"; do
 			source_tag[$i]="${source_tag[$i]//TAG:/}"
 		done
+		stop_m4a_export=$(($(date +%s%N)/1000000))
 	fi
 
 # Tag blacklist
@@ -148,6 +156,7 @@ APEv2_blacklist=(
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | grep "=" )
 
 	# Remove blacklisted tags
+	start_parse_blacklist=$(($(date +%s%N)/1000000))
 	for i in "${!source_tag[@]}"; do
 		tag_label=$(echo "${source_tag[$i]}" \
 					| awk -F "=" '{print $1}')
@@ -157,12 +166,14 @@ APEv2_blacklist=(
 			fi
 		done
 	done
+	stop_parse_blacklist=$(($(date +%s%N)/1000000))
 
 	# Add encoder ape tags
 	source_tag+=( "EncodedBy=${mac_version}" )
 	source_tag+=( "EncoderSettings=${mac_compress_arg}" )
 
 	# Substitution
+	start_parse_substitution=$(($(date +%s%N)/1000000))
 	for i in "${!source_tag[@]}"; do
 		# Special case - match with the word (gnu sed must installed)
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbum=\b/Album=/gI")
@@ -252,14 +263,45 @@ APEv2_blacklist=(
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/gI")
 		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//gI")
+
 	done
+	stop_parse_substitution=$(($(date +%s%N)/1000000))
 
 	# Remove duplicate tags
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | sort -u )
 
+	stop_all=$(($(date +%s%N)/1000000))
+
+	# Calc duration in s
+	diff_all=$(( stop_all - start_all ))
+	diff_flac_export=$(( stop_flac_export - start_flac_export ))
+	diff_wv_export=$(( stop_wv_export - start_wv_export ))
+	diff_m4a_export=$(( stop_m4a_export - start_m4a_export ))
+	diff_parse_blacklist=$(( stop_parse_blacklist - start_parse_blacklist ))
+	diff_parse_substitution=$(( stop_parse_substitution - start_parse_substitution ))
+
 	# Print
-	echo "$file" | rev | cut -d'/' -f-2 | rev
+	echo "filename: $file" | rev | cut -d'/' -f-2 | rev
+	echo "Process duration:"
+	echo " * all:                ${diff_all}ms"
+	echo " * export flac tag:    ${diff_flac_export}ms"
+	echo " * export wv tag:      ${diff_wv_export}ms"
+	echo " * export m4a tag:     ${diff_m4a_export}ms"
+	echo " * remove blacklisted: ${diff_parse_blacklist}ms"
+	echo " * rename tags:        ${diff_parse_substitution}ms"
+	echo "----------------------------------------------------------"
+	echo "apev2 tags:"
 	printf '%s\n' "${source_tag[@]}"
+	echo "=========================================================="
 	echo
+
+	unset stop_all
+	unset start_all
+	unset stop_flac_export
+	unset start_flac_export
+	unset stop_wv_export
+	unset start_wv_export
+	unset stop_m4a_export
+	unset start_m4a_export
 
 done
