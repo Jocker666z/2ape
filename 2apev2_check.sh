@@ -149,6 +149,7 @@ APEv2_blacklist=(
 			unset "source_tag[$i]"
 		fi
 	done
+
 	# Remove blacklisted tags
 	for i in "${!source_tag[@]}"; do
 		tag_label=$(echo "${source_tag[$i]}" \
@@ -253,9 +254,11 @@ APEv2_blacklist=(
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//g")
 	done
 
+	# Remove duplicate tags
+	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | uniq )
+
+	# Print
 	echo "$file" | rev | cut -d'/' -f-2 | rev
-	for i in "${!source_tag[@]}"; do
-		echo "${source_tag[i]}"
-	done
-	echo
+	printf '%s\n' "${source_tag[@]}" | uniq
+
 done

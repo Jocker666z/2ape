@@ -219,7 +219,6 @@ local cover_test
 local cover_image_type
 local cover_ext
 local tag_label
-local tag_no_equal
 local wavpack_tag_parsing_1
 local wavpack_tag_parsing_2
 local grab_tag_counter
@@ -305,6 +304,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 			unset "source_tag[$i]"
 		fi
 	done
+
 	# Remove blacklisted tags
 	for i in "${!source_tag[@]}"; do
 		tag_label=$(echo "${source_tag[$i]}" \
@@ -409,7 +409,10 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//g")
 	done
 
-	# Argument 
+	# Remove duplicate tags
+	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | uniq )
+
+	# Argument
 	lst_audio_ape_target_tags+=( "$(IFS='|';echo "${source_tag[*]}";IFS=$' \t\n')" )
 
 	# Progress
