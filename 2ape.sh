@@ -322,17 +322,16 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 
 	# Substitution
 	for i in "${!source_tag[@]}"; do
-		# Special case - match with the word
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bALBUM=\b/Album=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbum=\b/Album=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bAlbumartistsort=\b/ALBUMARTISTSORT=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bARTIST=\b/Artist=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bARTISTS=\b/Artists=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdisc=\b/Disc=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/g")
+		# Special case - match with the word (gnu sed must installed)
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbum=\b/Album=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbumartistsort=\b/ALBUMARTISTSORT=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdisc=\b/Disc=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/gI")
 
 		# MusicBrainz internal
 		source_tag[$i]="${source_tag[$i]//albumartistsort=/ALBUMARTISTSORT=}"
