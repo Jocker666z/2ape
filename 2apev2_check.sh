@@ -87,6 +87,7 @@ APEv2_blacklist=(
 	'ALBUM DYNAMIC RANGE (R128)'
 	'ALBUM DYNAMIC RANGE (DR)'
 	'Artistsort'
+	'Catalog #'
 	'CDTOC'
 	'CodingHistory'
 	'DYNAMIC RANGE'

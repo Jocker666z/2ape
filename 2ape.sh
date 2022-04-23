@@ -40,56 +40,22 @@ local test_counter
 
 test_counter="0"
 
+# Decode
 for file in "${lst_audio_src[@]}"; do
-
+	(
 	# FLAC - Verify integrity
 	if [[ "${file##*.}" = "flac" ]]; then
-		# Tests & populate file in arrays
-		## File test & error log generation
-		tmp_error=$(mktemp)
-		flac $flac_test_arg "$file" 2>"$tmp_error"
-		if [ -s "$tmp_error" ]; then
-			# Try to fix file
-			flac $flac_fix_arg "$file"
-			# Re-test
-			flac $flac_test_arg "$file" 2>"$tmp_error"
-			# If no valid 2 times exclude
-			if [ -s "$tmp_error" ]; then
-				cp "$tmp_error" "${file}.decode_error.log"
-				lst_audio_src_rejected+=( "$file" )
-			else
-				lst_audio_src_pass+=( "$file" )
-			fi
-		else
-			lst_audio_src_pass+=( "$file" )
-		fi
-
+		flac $flac_test_arg "$file" 2>"${cache_dir}/${file##*/}.decode_error.log"
 	# WAVPACK - Verify integrity
 	elif [[ "${file##*.}" = "wv" ]]; then
-		# Tests & populate file in arrays
-		## File test & error log generation
-		tmp_error=$(mktemp)
-		#wvunpack -q -v "$file" 2>"$tmp_error"
-		wvunpack $wavpack_test_arg "$file" 2>"$tmp_error"
-		if [ -s "$tmp_error" ]; then
-			cp "$tmp_error" "${file}.decode_error.log"
-			lst_audio_src_rejected+=( "$file" )
-		else
-			lst_audio_src_pass+=( "$file" )
-		fi
-
+		wvunpack $wavpack_test_arg "$file" 2>"${cache_dir}/${file##*/}.decode_error.log"
 	# ALAC - Verify integrity
 	elif [[ "${file##*.}" = "m4a" ]]; then
-		# Tests & populate file in arrays
-		## File test & error log generation
-		tmp_error=$(mktemp)
-		ffmpeg -v error -i "$file" -max_muxing_queue_size 9999 -f null - 2>"$tmp_error"
-		if [ -s "$tmp_error" ]; then
-			cp "$tmp_error" "${file}.decode_error.log"
-			lst_audio_src_rejected+=( "$file" )
-		else
-			lst_audio_src_pass+=( "$file" )
-		fi
+		ffmpeg -v error -i "$file" -max_muxing_queue_size 9999 -f null - 2>"${cache_dir}/${file##*/}.decode_error.log"
+	fi
+	) &
+	if [[ $(jobs -r -p | wc -l) -ge $nproc ]]; then
+		wait -n
 	fi
 
 	# Progress
@@ -102,6 +68,42 @@ for file in "${lst_audio_src[@]}"; do
 		fi
 	fi
 
+done
+wait
+
+# Test if error generated
+for file in "${lst_audio_src[@]}"; do
+
+	# FLAC - Special fix loop
+	if [[ "${file##*.}" = "flac" ]]; then
+		# Error log test & populate file in arrays
+		if [ -s "${cache_dir}/${file##*/}.decode_error.log" ]; then
+			# Try to fix file
+			flac $flac_fix_arg "$file"
+			# Re-test
+			flac $flac_test_arg "$file" 2>"${cache_dir}/${file##*/}.decode_error.log"
+			# If no valid 2 times exclude
+			if [ -s "${cache_dir}/${file##*/}.decode_error.log" ]; then
+				mv "${cache_dir}/${file##*/}.decode_error.log" "${file}.decode_error.log"
+				lst_audio_src_rejected+=( "$file" )
+			else
+				rm "${cache_dir}/${file##*/}.decode_error.log"
+				lst_audio_src_pass+=( "$file" )
+			fi
+		else
+			rm "${cache_dir}/${file##*/}.decode_error.log"
+			lst_audio_src_pass+=( "$file" )
+		fi
+	# Other type of files
+	else
+		if [ -s "${cache_dir}/${file##*/}.decode_error.log" ]; then
+			mv "${cache_dir}/${file##*/}.decode_error.log" "${file}.decode_error.log"
+			lst_audio_src_rejected+=( "$file" )
+		else
+			rm "${cache_dir}/${file##*/}.decode_error.log"
+			lst_audio_src_pass+=( "$file" )
+		fi
+	fi
 done
 
 # Progress end
@@ -750,6 +752,7 @@ command_display "2ape"
 core_dependencies=(ffmpeg ffprobe flac mac metaflac wvunpack wvtag)
 # Paths
 export PATH=$PATH:/home/$USER/.local/bin
+cache_dir="/tmp/2ape"
 # Nb process parrallel (nb of processor)
 nproc=$(nproc --all)
 # Input extention available
@@ -790,6 +793,7 @@ APEv2_blacklist=(
 	'ALBUM DYNAMIC RANGE (R128)'
 	'ALBUM DYNAMIC RANGE (DR)'
 	'Artistsort'
+	'Catalog #'
 	'CDTOC'
 	'CodingHistory'
 	'DYNAMIC RANGE'
@@ -856,6 +860,14 @@ while [[ $# -gt 0 ]]; do
 esac
 shift
 done
+
+# Check cache directory
+if [ ! -d "$cache_dir" ]; then
+	mkdir "$cache_dir"
+fi
+
+# Consider if file exist in cache directory after 1 days, delete it
+find "$cache_dir/" -type f -mtime +1 -exec /bin/rm -f {} \;
 
 # Test dependencies
 command_test
