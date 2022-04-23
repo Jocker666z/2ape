@@ -698,8 +698,51 @@ if [ "$source_not_removed" = "1" ] ; then
 	esac
 fi
 }
+# Test dependencies
+command_label() {
+if [[ "$command" = "ffprobe" ]]; then
+	command="$command (ffmpeg package)"
+fi
+if [[ "$command" = "mac" ]]; then
+	command="$command (monkeys-audio package)"
+fi
+if [[ "$command" = "metaflac" ]]; then
+	command="$command (flac package)"
+fi
+if [[ "$command" = "wvtag" ]] || [[ "$command" = "wvunpack" ]]; then
+	command="$command (wavpack package)"
+fi
+if [[ "$command" = "wvunpack" ]] || [[ "$command" = "wvunpack" ]]; then
+	command="$command (wavpack package)"
+fi
+}
+command_display() {
+local label
+label="$1"
+if (( "${#command_fail[@]}" )); then
+	echo
+	echo "Please install the $label dependencies:"
+	display_list_truncate "${command_fail[@]}"
+	echo
+	exit
+fi
+}
+command_test() {
+n=0;
+for command in "${core_dependencies[@]}"; do
+	if hash "$command" &>/dev/null; then
+		(( c++ )) || true
+	else
+		command_label
+		command_fail+=("[!] $command")
+		(( n++ )) || true
+	fi
+done
+command_display "2ape"
+}
 
-# General variables
+# Nees Dependencies
+core_dependencies=(ffmpeg ffprobe flac mac metaflac wvunpack wvtag)
 # Paths
 export PATH=$PATH:/home/$USER/.local/bin
 # Nb process parrallel (nb of processor)
@@ -798,6 +841,8 @@ while [[ $# -gt 0 ]]; do
 esac
 shift
 done
+
+command_test
 
 # Start time counter of process
 start_process_time=$(date +%s)
