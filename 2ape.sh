@@ -296,14 +296,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 	fi
 
 	# Remove empty tag label=
-	for i in "${!source_tag[@]}"; do
-		tag_label=$(echo "${source_tag[$i]}" | grep "=" \
-					| awk -F "=" '{print $1}')
-		# If no label=
-		if [[ -z "$tag_label" ]];then
-			unset "source_tag[$i]"
-		fi
-	done
+	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | grep "=" )
 
 	# Remove blacklisted tags
 	for i in "${!source_tag[@]}"; do
@@ -330,9 +323,11 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/gI")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/gI")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdisc=\b/Disc=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\breleasecountry=\b/RELEASECOUNTRY=/gI")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/gI")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/gI")
-
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\byear=\b/Year=/gI")
+	
 		# MusicBrainz internal
 		source_tag[$i]="${source_tag[$i]//albumartistsort=/ALBUMARTISTSORT=}"
 		source_tag[$i]="${source_tag[$i]//artistsort=/ARTISTSORT=}"
@@ -410,7 +405,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 	done
 
 	# Remove duplicate tags
-	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | uniq )
+	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | sort -u )
 
 	# Argument
 	lst_audio_ape_target_tags+=( "$(IFS='|';echo "${source_tag[*]}";IFS=$' \t\n')" )
@@ -790,11 +785,13 @@ APEv2_blacklist=(
 	'ACCURATERIPRESULT'
 	'album_artist'
 	'ALBUM ARTIST'
+	'ALBUM DYNAMIC RANGE'
 	'ALBUM DYNAMIC RANGE (R128)'
 	'ALBUM DYNAMIC RANGE (DR)'
 	'Artistsort'
 	'CDTOC'
 	'CodingHistory'
+	'DYNAMIC RANGE'
 	'DYNAMIC RANGE (R128)'
 	'DYNAMIC RANGE (DR)'
 	'DISCID'

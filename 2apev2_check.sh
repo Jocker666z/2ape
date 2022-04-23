@@ -83,11 +83,13 @@ APEv2_blacklist=(
 	'ACCURATERIPRESULT'
 	'album_artist'
 	'ALBUM ARTIST'
+	'ALBUM DYNAMIC RANGE'
 	'ALBUM DYNAMIC RANGE (R128)'
 	'ALBUM DYNAMIC RANGE (DR)'
 	'Artistsort'
 	'CDTOC'
 	'CodingHistory'
+	'DYNAMIC RANGE'
 	'DYNAMIC RANGE (R128)'
 	'DYNAMIC RANGE (DR)'
 	'DISCID'
@@ -141,14 +143,7 @@ APEv2_blacklist=(
 )
 
 	# Remove empty tag label=
-	for i in "${!source_tag[@]}"; do
-		tag_label=$(echo "${source_tag[$i]}" | grep "=" \
-					| awk -F "=" '{print $1}')
-		# If no label=
-		if [[ -z "$tag_label" ]];then
-			unset "source_tag[$i]"
-		fi
-	done
+	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | grep "=" )
 
 	# Remove blacklisted tags
 	for i in "${!source_tag[@]}"; do
@@ -175,8 +170,10 @@ APEv2_blacklist=(
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/gI")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/gI")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdisc=\b/Disc=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\breleasecountry=\b/RELEASECOUNTRY=/gI")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/gI")
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\byear=\b/Year=/gI")
 	
 		# MusicBrainz internal
 		source_tag[$i]="${source_tag[$i]//albumartistsort=/ALBUMARTISTSORT=}"
@@ -255,10 +252,11 @@ APEv2_blacklist=(
 	done
 
 	# Remove duplicate tags
-	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | uniq )
+	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | sort -u )
 
 	# Print
 	echo "$file" | rev | cut -d'/' -f-2 | rev
-	printf '%s\n' "${source_tag[@]}" | uniq
+	printf '%s\n' "${source_tag[@]}"
+	echo
 
 done
