@@ -80,29 +80,18 @@ for file in "${lst_audio_src[@]}"; do
 		if [ -s "${cache_dir}/${file##*/}.decode_error.log" ]; then
 			# Try to fix file
 			flac $flac_fix_arg "$file"
-			# Re-test
+			# Re-test, if no valid 2 times exclude
 			flac $flac_test_arg "$file" 2>"${cache_dir}/${file##*/}.decode_error.log"
-			# If no valid 2 times exclude
-			if [ -s "${cache_dir}/${file##*/}.decode_error.log" ]; then
-				mv "${cache_dir}/${file##*/}.decode_error.log" "${file}.decode_error.log"
-				lst_audio_src_rejected+=( "$file" )
-			else
-				rm "${cache_dir}/${file##*/}.decode_error.log"
-				lst_audio_src_pass+=( "$file" )
-			fi
-		else
-			rm "${cache_dir}/${file##*/}.decode_error.log"
-			lst_audio_src_pass+=( "$file" )
 		fi
-	# Other type of files
+	fi
+
+	# Errors validation
+	if [ -s "${cache_dir}/${file##*/}.decode_error.log" ]; then
+		mv "${cache_dir}/${file##*/}.decode_error.log" "${file}.decode_error.log"
+		lst_audio_src_rejected+=( "$file" )
 	else
-		if [ -s "${cache_dir}/${file##*/}.decode_error.log" ]; then
-			mv "${cache_dir}/${file##*/}.decode_error.log" "${file}.decode_error.log"
-			lst_audio_src_rejected+=( "$file" )
-		else
-			rm "${cache_dir}/${file##*/}.decode_error.log"
-			lst_audio_src_pass+=( "$file" )
-		fi
+		rm "${cache_dir}/${file##*/}.decode_error.log"
+		lst_audio_src_pass+=( "$file" )
 	fi
 done
 
