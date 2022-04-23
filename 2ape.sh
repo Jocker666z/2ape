@@ -256,8 +256,9 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 									| grep -v -e '^[[:space:]]*$' \
 									| tail -n +2 | sort )
 		# Clean array
-		mapfile -t source_tag_temp1 < <( printf '%s\n' "${source_tag_temp[@]}" | awk -F ":" '{print $1}' )
-		mapfile -t source_tag_temp2 < <( printf '%s\n' "${source_tag_temp[@]}" | cut -f2- -d' ' | sed 's/^ *//' )
+		mapfile -t source_tag_temp1 < <( printf '%s\n' "${source_tag_temp[@]}" \
+										| awk -F ":" '{print $1}' )
+		mapfile -t source_tag_temp2 < <( printf '%s\n' "${source_tag_temp[@]}" \
 		for i in "${!source_tag_raw[@]}"; do
 			source_tag+=( "${source_tag_temp1[$i]}=${source_tag_temp2[$i]}" )
 		done
@@ -307,20 +308,21 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 	source_tag+=( "EncoderSettings=${mac_compress_arg}" )
 
 	# Substitution
+	# Special case - match with the word (gnu sed must installed)
+	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" \
+			| sed "s/\balbum=\b/Album=/gI" \
+			| sed "s/\balbumartistsort=\b/ALBUMARTISTSORT=/gI" \
+			| sed "s/\bartist=\b/Artist=/gI" \
+			| sed "s/\bartists=\b/Artists=/gI" \
+			| sed "s/\bartist=\b/Artist=/gI" \
+			| sed "s/\bartists=\b/Artists=/gI" \
+			| sed "s/\bdisc=\b/Disc=/gI" \
+			| sed "s/\breleasecountry=\b/RELEASECOUNTRY=/gI" \
+			| sed "s/\btitle=\b/Title=/gI" \
+			| sed "s/\btrack=\b/Track=/gI" \
+			| sed "s/\byear=\b/Year=/gI" \
+			)
 	for i in "${!source_tag[@]}"; do
-		# Special case - match with the word (gnu sed must installed)
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbum=\b/Album=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbumartistsort=\b/ALBUMARTISTSORT=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdisc=\b/Disc=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\breleasecountry=\b/RELEASECOUNTRY=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/gI")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\byear=\b/Year=/gI")
-	
 		# MusicBrainz internal
 		source_tag[$i]="${source_tag[$i]//albumartistsort=/ALBUMARTISTSORT=}"
 		source_tag[$i]="${source_tag[$i]//artistsort=/ARTISTSORT=}"
