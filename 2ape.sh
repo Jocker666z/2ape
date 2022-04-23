@@ -296,7 +296,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		fi
 	fi
 
-	# Remove incompatible or not desired tag
+	# Remove empty tag label=
 	for i in "${!source_tag[@]}"; do
 		tag_label=$(echo "${source_tag[$i]}" | grep "=" \
 					| awk -F "=" '{print $1}')
@@ -304,13 +304,16 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		if [[ -z "$tag_label" ]];then
 			unset "source_tag[$i]"
 		fi
-		# If match with blacklist
+	done
+	# Remove blacklisted tags
+	for i in "${!source_tag[@]}"; do
+		tag_label=$(echo "${source_tag[$i]}" \
+					| awk -F "=" '{print $1}')
 		for tag in "${APEv2_blacklist[@]}"; do
 			if [[ "$tag" = "$tag_label" ]];then
 				unset "source_tag[$i]"
 			fi
 		done
-		
 	done
 
 	# Add encoder ape tags

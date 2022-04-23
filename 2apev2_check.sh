@@ -140,7 +140,7 @@ APEv2_blacklist=(
 	'Originaldate'
 )
 
-	# Remove incompatible or not desired tag
+	# Remove empty tag label=
 	for i in "${!source_tag[@]}"; do
 		tag_label=$(echo "${source_tag[$i]}" | grep "=" \
 					| awk -F "=" '{print $1}')
@@ -148,13 +148,16 @@ APEv2_blacklist=(
 		if [[ -z "$tag_label" ]];then
 			unset "source_tag[$i]"
 		fi
-		# If match with blacklist
+	done
+	# Remove blacklisted tags
+	for i in "${!source_tag[@]}"; do
+		tag_label=$(echo "${source_tag[$i]}" \
+					| awk -F "=" '{print $1}')
 		for tag in "${APEv2_blacklist[@]}"; do
 			if [[ "$tag" = "$tag_label" ]];then
 				unset "source_tag[$i]"
 			fi
 		done
-		
 	done
 
 	# Add encoder ape tags
@@ -163,18 +166,17 @@ APEv2_blacklist=(
 
 	# Substitution
 	for i in "${!source_tag[@]}"; do
-		# Special case - match with the word
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bALBUM=\b/Album=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbum=\b/Album=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bAlbumartistsort=\b/ALBUMARTISTSORT=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bARTIST=\b/Artist=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bARTISTS=\b/Artists=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdisc=\b/Disc=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/g")
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/g")
-
+		# Special case - match with the word (gnu sed must installed)
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbum=\b/Album=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\balbumartistsort=\b/ALBUMARTISTSORT=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartist=\b/Artist=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bartists=\b/Artists=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdisc=\b/Disc=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btitle=\b/Title=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\btrack=\b/Track=/gI")
+	
 		# MusicBrainz internal
 		source_tag[$i]="${source_tag[$i]//albumartistsort=/ALBUMARTISTSORT=}"
 		source_tag[$i]="${source_tag[$i]//artistsort=/ARTISTSORT=}"
