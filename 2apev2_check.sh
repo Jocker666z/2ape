@@ -86,6 +86,7 @@ APEv2_blacklist=(
 	'Artistsort'
 	'CDTOC'
 	'CodingHistory'
+	'DISCID'
 	'ENSEMBLE'
 	'Limited Edition'
 	'OrigDate'

@@ -784,6 +784,7 @@ APEv2_blacklist=(
 	'Artistsort'
 	'CDTOC'
 	'CodingHistory'
+	'DISCID'
 	'ENSEMBLE'
 	'Limited Edition'
 	'OrigDate'
@@ -842,6 +843,7 @@ esac
 shift
 done
 
+# Test dependencies
 command_test
 
 # Start time counter of process
