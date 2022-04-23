@@ -56,11 +56,11 @@ for file in "${lst_audio_src[@]}"; do
 										| awk -F ":" '{print $1}' )
 		mapfile -t source_tag_temp2 < <( printf '%s\n' "${source_tag_temp[@]}" \
 										| cut -f2- -d' ' | sed 's/^ *//' )
-		for i in "${!source_tag_raw[@]}"; do
+		for i in "${!source_tag_temp[@]}"; do
 			source_tag+=( "${source_tag_temp1[$i]}=${source_tag_temp2[$i]}" )
 		done
 		stop_wv_export=$(($(date +%s%N)/1000000))
-
+		
 	# ALAC
 	elif [[ -s "${file%.*}.m4a" ]]; then
 		start_m4a_export=$(($(date +%s%N)/1000000))
@@ -106,6 +106,7 @@ APEv2_blacklist=(
 	'DYNAMIC RANGE (R128)'
 	'DYNAMIC RANGE (DR)'
 	'DISCID'
+	'encoder settings'
 	'ENSEMBLE'
 	'LABELNO'
 	'Limited Edition'
@@ -159,13 +160,13 @@ APEv2_blacklist=(
 	# Remove empty tag label=
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | grep "=" )
 
-	# Remove blacklisted tags
+	# Remove blacklisted tags - case insensitive
 	start_parse_blacklist=$(($(date +%s%N)/1000000))
 	for i in "${!source_tag[@]}"; do
 		tag_label=$(echo "${source_tag[$i]}" \
 					| awk -F "=" '{print $1}')
 		for tag in "${APEv2_blacklist[@]}"; do
-			if [[ "$tag" = "$tag_label" ]];then
+			if [[ "${tag,,}" = "${tag_label,,}" ]];then
 				unset "source_tag[$i]"
 			fi
 		done
@@ -188,6 +189,7 @@ APEv2_blacklist=(
 			| sed "s/\bartist=\b/Artist=/gI" \
 			| sed "s/\bartists=\b/Artists=/gI" \
 			| sed "s/\bdisc=\b/Disc=/gI" \
+			| sed "s/\bcompilation=\b/Compilation=/gI" \
 			| sed "s/\breleasecountry=\b/RELEASECOUNTRY=/gI" \
 			| sed "s/\btitle=\b/Title=/gI" \
 			| sed "s/\btrack=\b/Track=/gI" \
@@ -213,7 +215,6 @@ APEv2_blacklist=(
 		source_tag[$i]="${source_tag[$i]//BARCODE=/Barcode=}"
 		source_tag[$i]="${source_tag[$i]//CATALOGNUMBER=/CatalogNumber=}"
 		source_tag[$i]="${source_tag[$i]//COMMENT=/Comment=}"
-		source_tag[$i]="${source_tag[$i]//COMPILATION=/Compilation=}"
 		source_tag[$i]="${source_tag[$i]//COMPOSER=/Composer=}"
 		source_tag[$i]="${source_tag[$i]//CONDUCTOR=/Conductor=}"
 		source_tag[$i]="${source_tag[$i]//COPYRIGHT=/Copyright=}"

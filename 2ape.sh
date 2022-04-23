@@ -259,7 +259,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		mapfile -t source_tag_temp1 < <( printf '%s\n' "${source_tag_temp[@]}" \
 										| awk -F ":" '{print $1}' )
 		mapfile -t source_tag_temp2 < <( printf '%s\n' "${source_tag_temp[@]}" \
-		for i in "${!source_tag_raw[@]}"; do
+		for i in "${!source_tag_temp[@]}"; do
 			source_tag+=( "${source_tag_temp1[$i]}=${source_tag_temp2[$i]}" )
 		done
 
@@ -297,7 +297,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		tag_label=$(echo "${source_tag[$i]}" \
 					| awk -F "=" '{print $1}')
 		for tag in "${APEv2_blacklist[@]}"; do
-			if [[ "$tag" = "$tag_label" ]];then
+			if [[ "${tag,,}" = "${tag_label,,}" ]];then
 				unset "source_tag[$i]"
 			fi
 		done
@@ -793,6 +793,7 @@ APEv2_blacklist=(
 	'DYNAMIC RANGE (R128)'
 	'DYNAMIC RANGE (DR)'
 	'DISCID'
+	'encoder settings'
 	'ENSEMBLE'
 	'LABELNO'
 	'Limited Edition'
@@ -802,7 +803,7 @@ APEv2_blacklist=(
 	'OrigReference'
 	'OrigTime'
 	'Release Type'
-	'RELEASE Year'
+	'RELEASE DATE'
 	'Retail Date'
 	'Rip Date'
 	'Ripping Tool'
