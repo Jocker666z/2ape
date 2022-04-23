@@ -785,12 +785,17 @@ APEv2_blacklist=(
 	'ACCURATERIPRESULT'
 	'album_artist'
 	'ALBUM ARTIST'
+	'ALBUM DYNAMIC RANGE (R128)'
+	'ALBUM DYNAMIC RANGE (DR)'
 	'Artistsort'
 	'CDTOC'
 	'CodingHistory'
+	'DYNAMIC RANGE (R128)'
+	'DYNAMIC RANGE (DR)'
 	'DISCID'
 	'ENSEMBLE'
 	'Limited Edition'
+	'ORCHESTRA'
 	'OrigDate'
 	'Originator'
 	'OrigReference'
@@ -836,6 +841,7 @@ APEv2_blacklist=(
 	'tvsh'
 	'Originaldate'
 )
+
 # Command arguments
 while [[ $# -gt 0 ]]; do
 	key="$1"
