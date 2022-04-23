@@ -400,6 +400,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		# iTune
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
 		# Waste fix
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/gI")
 		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//g")
 	done
@@ -796,6 +797,7 @@ APEv2_blacklist=(
 	'DYNAMIC RANGE (DR)'
 	'DISCID'
 	'ENSEMBLE'
+	'LABELNO'
 	'Limited Edition'
 	'ORCHESTRA'
 	'OrigDate'

@@ -94,6 +94,7 @@ APEv2_blacklist=(
 	'DYNAMIC RANGE (DR)'
 	'DISCID'
 	'ENSEMBLE'
+	'LABELNO'
 	'Limited Edition'
 	'ORCHESTRA'
 	'OrigDate'
@@ -101,7 +102,7 @@ APEv2_blacklist=(
 	'OrigReference'
 	'OrigTime'
 	'Release Type'
-	'RELEASE Year'
+	'RELEASE DATE'
 	'Retail Date'
 	'Rip Date'
 	'Ripping Tool'
@@ -247,8 +248,9 @@ APEv2_blacklist=(
 		# iTune
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
 		# Waste fix
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/gI")
 		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//g")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//gI")
 	done
 
 	# Remove duplicate tags
