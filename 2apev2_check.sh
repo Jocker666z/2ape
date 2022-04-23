@@ -34,6 +34,8 @@ for file in "${lst_audio_src[@]}"; do
 	# Reset
 	source_tag=()
 	source_tag_temp=()
+	source_tag_temp1=()
+	source_tag_temp2=()
 
 	# FLAC
 	if [[ -s "${file%.*}.flac" ]]; then
@@ -50,10 +52,10 @@ for file in "${lst_audio_src[@]}"; do
 									| grep -v -e '^[[:space:]]*$' \
 									| tail -n +2 | sort )
 		# Clean array
-		for i in "${!source_tag_temp[@]}"; do
-			wavpack_tag_parsing_1=$(echo "${source_tag_temp[$i]}" | awk -F ":" '{print $1}')
-			wavpack_tag_parsing_2=$(echo "${source_tag_temp[$i]}" | cut -f2- -d' ' | sed 's/^ *//')
-			source_tag+=( "${wavpack_tag_parsing_1}=${wavpack_tag_parsing_2}" )
+		mapfile -t source_tag_temp1 < <( printf '%s\n' "${source_tag_temp[@]}" | awk -F ":" '{print $1}' )
+		mapfile -t source_tag_temp2 < <( printf '%s\n' "${source_tag_temp[@]}" | cut -f2- -d' ' | sed 's/^ *//' )
+		for i in "${!source_tag_raw[@]}"; do
+			source_tag+=( "${source_tag_temp1[$i]}=${source_tag_temp2[$i]}" )
 		done
 		stop_wv_export=$(($(date +%s%N)/1000000))
 
