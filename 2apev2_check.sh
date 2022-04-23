@@ -137,15 +137,19 @@ APEv2_blacklist=(
 
 	# Remove incompatible or not desired tag
 	for i in "${!source_tag[@]}"; do
-		tag_label=$(echo "${source_tag[$i]}" | awk -F "=" '{print $1}')
-		tag_no_equal=$(echo "${source_tag[$i]}" | grep "=")
+		tag_label=$(echo "${source_tag[$i]}" | grep "=" \
+					| awk -F "=" '{print $1}')
+		# If no label=
+		if [[ -z "$tag_label" ]];then
+			unset "source_tag[$i]"
+		fi
+		# If match with blacklist
 		for tag in "${APEv2_blacklist[@]}"; do
 			if [[ "$tag" = "$tag_label" ]];then
 				unset "source_tag[$i]"
-			elif [[ -z "$tag_no_equal" ]];then
-				unset "source_tag[$i]"
 			fi
 		done
+		
 	done
 
 	# Add encoder ape tags
