@@ -742,7 +742,7 @@ nproc=$(nproc --all)
 # Input extention available
 input_ext="flac|m4a|wv"
 # Monkey's Audio
-mac_version="Monkey's Audio $(mac 2>&1 | head -1 | awk -F"[()]" '{print $2}')"
+mac_version="Monkey's Audio $(mac 2>&1 | head -1 | awk -F"[()]" '{print $2}' | tr -d ' ')"
 mac_compress_arg="-c5000"
 # ALAC
 ffmpeg_log_lvl="-hide_banner -loglevel panic -nostats"

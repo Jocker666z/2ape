@@ -8,7 +8,7 @@
 # https://github.com/Jocker666z/2ape/
 # Licence : unlicense
 
-mac_version="Monkey's Audio $(mac 2>&1 | head -1 | awk -F"[()]" '{print $2}')"
+mac_version="Monkey's Audio $(mac 2>&1 | head -1 | awk -F"[()]" '{print $2}' | tr -d ' ')"
 mac_compress_arg="-c5000"
 input_ext="flac|m4a|wv"
 
