@@ -224,6 +224,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 	source_tag_temp1=()
 	source_tag_temp2=()
 	tag_name=()
+	tag_label=()
 
 	# FLAC
 	if [[ -s "${file%.*}.flac" ]]; then
@@ -294,34 +295,18 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 	# Remove empty tag label=
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | grep "=" )
 
-	# Add encoder ape tags
-	source_tag+=( "EncodedBy=${mac_version}" )
-	source_tag+=( "EncoderSettings=${mac_compress_arg}" )
-
 	# Substitution
-	# Special case - match with the word (gnu sed must installed)
-	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" \
-			| sed "s/\balbum=\b/Album=/gI" \
-			| sed "s/\balbumartistsort=\b/ALBUMARTISTSORT=/gI" \
-			| sed "s/\bartist=\b/Artist=/gI" \
-			| sed "s/\bartists=\b/Artists=/gI" \
-			| sed "s/\bartist=\b/Artist=/gI" \
-			| sed "s/\bartists=\b/Artists=/gI" \
-			| sed "s/\bdisc=\b/Disc=/gI" \
-			| sed "s/\breleasecountry=\b/RELEASECOUNTRY=/gI" \
-			| sed "s/\btitle=\b/Title=/gI" \
-			| sed "s/\btrack=\b/Track=/gI" \
-			| sed "s/\byear=\b/Year=/gI" \
-			)
 	for i in "${!source_tag[@]}"; do
-		# MusicBrainz internal
+		# MusicBrainz internal name
 		source_tag[$i]="${source_tag[$i]//albumartistsort=/ALBUMARTISTSORT=}"
 		source_tag[$i]="${source_tag[$i]//artistsort=/ARTISTSORT=}"
 		source_tag[$i]="${source_tag[$i]//musicbrainz_artistid=/MUSICBRAINZ_ARTISTID=}"
-		source_tag[$i]="${source_tag[$i]//Musicbrainz_Albumid=/MUSICBRAINZ_ALBUMID=}"
-		source_tag[$i]="${source_tag[$i]//Musicbrainz_Artistid=/MUSICBRAINZ_ARTISTID=}"
-		source_tag[$i]="${source_tag[$i]//Musicbrainz_Releasegroupid=/MUSICBRAINZ_RELEASEGROUPID=}"
-		source_tag[$i]="${source_tag[$i]//Originalyear=/ORIGINALYEAR=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_albumid=/MUSICBRAINZ_ALBUMID=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_artistid=/MUSICBRAINZ_ARTISTID=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_releasegroupid=/MUSICBRAINZ_RELEASEGROUPID=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_releasetrackid=/MUSICBRAINZ_RELEASETRACKID=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_trackid=/MUSICBRAINZ_RELEASETRACKID=}"
+		source_tag[$i]="${source_tag[$i]//originalyear=/ORIGINALYEAR=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_album_gain=/REPLAYGAIN_ALBUM_GAIN=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_album_peak=/REPLAYGAIN_ALBUM_PEAK=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_track_gain=/REPLAYGAIN_TRACK_GAIN=}"
@@ -365,9 +350,6 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]="${source_tag[$i]//TRACKNUMBER=/Track=}"
 		source_tag[$i]="${source_tag[$i]//WEBSITE=/Weblink=}"
 		source_tag[$i]="${source_tag[$i]//WRITER=/Writer=}"
-		# Vorbis malformed
-		source_tag[$i]="${source_tag[$i]//musicbrainz_releasetrackid=/MUSICBRAINZ_RELEASETRACKID=}"
-		source_tag[$i]="${source_tag[$i]//musicbrainz_trackid=/MUSICBRAINZ_RELEASETRACKID=}"
 		# ID3v2
 		source_tag[$i]="${source_tag[$i]//Acoustid Id=/ACOUSTID_ID=}"
 		source_tag[$i]="${source_tag[$i]//arranger=/Arranger=}"
@@ -386,33 +368,43 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		# iTune
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
 		# Waste fix
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/g")
 		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//g")
 	done
-	
-	# Keep whitelisted tags - case insensitive
+
+	# Whitelist parsing
 	mapfile -t tag_name < <( printf '%s\n' "${source_tag[@]}" | awk -F "=" '{print $1}' )
+	mapfile -t tag_label < <( printf '%s\n' "${source_tag[@]}" | cut -f2- -d'=' )
 	for i in "${!tag_name[@]}"; do
 		for tag in "${APEv2_whitelist[@]}"; do
-			[[ "${tag_name[i],,}" = "${tag,,}" ]] && continue 2
+			# ape2v2 std
+			if [[ "${tag_name[i],,}" = "${tag,,}" ]]; then
+				source_tag[$i]="${tag}=${tag_label[i]}"
+				continue 2
+			# reject
+			else
+				unset "source_tag[i]"
+			fi
 		done
-		unset "source_tag[i]"
 	done
+
+	# Add encoder ape tags
+	source_tag+=( "EncodedBy=${mac_version}" )
+	source_tag+=( "EncoderSettings=${mac_compress_arg}" )
 
 	# Remove duplicate tags
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | sort -u )
 
-	# Argument
+	# mac tag argument
 	lst_audio_ape_target_tags+=( "$(IFS='|';echo "${source_tag[*]}";IFS=$' \t\n')" )
 
 	# Progress
 	if ! [[ "$verbose" = "1" ]]; then
 		grab_tag_counter=$((grab_tag_counter+1))
 		if [[ "${#lst_audio_ape_compressed[@]}" = "1" ]]; then
-			echo -ne "${grab_tag_counter}/${#lst_audio_ape_compressed[@]} source file is being converted tags"\\r
+			echo -ne "${grab_tag_counter}/${#lst_audio_ape_compressed[@]} tag is being converted to apev2"\\r
 		else
-			echo -ne "${grab_tag_counter}/${#lst_audio_ape_compressed[@]} source files are being converted tags"\\r
+			echo -ne "${grab_tag_counter}/${#lst_audio_ape_compressed[@]} tags are being converted to apev2"\\r
 		fi
 	fi
 done
@@ -421,9 +413,9 @@ done
 if ! [[ "$verbose" = "1" ]]; then
 	tput hpa 0; tput el
 	if [[ "${#lst_audio_ape_compressed[@]}" = "1" ]]; then
-		echo "${grab_tag_counter} source file converted tags"
+		echo "${grab_tag_counter} tag converted to apev2"
 	else
-		echo "${grab_tag_counter} source files converted tags"
+		echo "${grab_tag_counter} tags converted to apev2"
 	fi
 fi
 }
@@ -499,7 +491,6 @@ for i in "${!lst_audio_ape_compressed[@]}"; do
 	if ! [[ "$verbose" = "1" ]]; then
 		tag_counter=$((tag_counter+1))
 		if [[ "${#lst_audio_wav_decoded[@]}" = "1" ]]; then
-			echo "${#lst_audio_ape_compressed[@]} ape files tagged"
 			echo -ne "${tag_counter}/${#lst_audio_ape_compressed[@]} ape file is being tagged"\\r
 		else
 			echo -ne "${tag_counter}/${#lst_audio_ape_compressed[@]} ape files are being tagged"\\r
@@ -764,6 +755,7 @@ wavpack_test_arg="-q -v"
 wavpack_decode_arg="-q"
 # Tag whitelist according with:
 # https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html
+# Ommit: EncodedBy, EncoderSettings = special case for rewrite this
 APEv2_whitelist=(
 	'ACOUSTID_ID'
 	'ACOUSTID_FINGERPRINT'
@@ -788,8 +780,6 @@ APEv2_whitelist=(
 	'Director'
 	'Disc'
 	'DiscSubtitle'
-	'EncodedBy'
-	'EncoderSettings'
 	'Engineer'
 	'Genre'
 	'Grouping'
@@ -877,7 +867,7 @@ search_source_files
 # Start main
 if (( "${#lst_audio_src[@]}" )); then
 	echo
-	echo "2ape start processing \(^o^)/"
+	echo "2ape start processing with $mac_version \(^o^)/"
 	echo
 	echo "${#lst_audio_src[@]} source files found"
 

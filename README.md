@@ -11,7 +11,5 @@ Lossless audio source supported: ALAC, FLAC, WAVPACK
 ## Dependencies
 `ffmpeg flac monkeys-audio wavpack`
 
-Note: gnu-sed is used with patterns which may not be compatible with other systems than gnu-linux.
-
 ## Use
 Launch `2ape` command in directory with source files, the search depth is tree child directories.

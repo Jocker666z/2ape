@@ -37,6 +37,7 @@ for file in "${lst_audio_src[@]}"; do
 	source_tag_temp1=()
 	source_tag_temp2=()
 	tag_name=()
+	tag_label=()
 
 	# FLAC
 	if [[ -s "${file%.*}.flac" ]]; then
@@ -77,6 +78,7 @@ for file in "${lst_audio_src[@]}"; do
 
 # Tag whitelist according with:
 # https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html
+# Ommit: EncodedBy, EncoderSettings = special case for rewrite this
 APEv2_whitelist=(
 	'ACOUSTID_ID'
 	'ACOUSTID_FINGERPRINT'
@@ -101,8 +103,6 @@ APEv2_whitelist=(
 	'Director'
 	'Disc'
 	'DiscSubtitle'
-	'EncodedBy'
-	'EncoderSettings'
 	'Engineer'
 	'Genre'
 	'Grouping'
@@ -159,40 +159,24 @@ APEv2_whitelist=(
 	'Writer'
 )
 
-	# Remove empty tag label=
-	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | grep "=" )
-
-	# Add encoder ape tags
-	source_tag+=( "EncodedBy=${mac_version}" )
-	source_tag+=( "EncoderSettings=${mac_compress_arg}" )
-
 	# Substitution
 	start_parse_substitution=$(($(date +%s%N)/1000000))
 
-	# Special case - match with the word (gnu sed must installed)
-	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" \
-			| sed "s/\balbum=\b/Album=/gI" \
-			| sed "s/\balbumartistsort=\b/ALBUMARTISTSORT=/gI" \
-			| sed "s/\bartist=\b/Artist=/gI" \
-			| sed "s/\bartists=\b/Artists=/gI" \
-			| sed "s/\bartist=\b/Artist=/gI" \
-			| sed "s/\bartists=\b/Artists=/gI" \
-			| sed "s/\bdisc=\b/Disc=/gI" \
-			| sed "s/\bcompilation=\b/Compilation=/gI" \
-			| sed "s/\breleasecountry=\b/RELEASECOUNTRY=/gI" \
-			| sed "s/\btitle=\b/Title=/gI" \
-			| sed "s/\btrack=\b/Track=/gI" \
-			| sed "s/\byear=\b/Year=/gI" \
-			)
+	# Remove empty tag label=
+	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | grep "=" )
+
+	# Substitution
 	for i in "${!source_tag[@]}"; do
-		# MusicBrainz internal
+		# MusicBrainz internal name
 		source_tag[$i]="${source_tag[$i]//albumartistsort=/ALBUMARTISTSORT=}"
 		source_tag[$i]="${source_tag[$i]//artistsort=/ARTISTSORT=}"
 		source_tag[$i]="${source_tag[$i]//musicbrainz_artistid=/MUSICBRAINZ_ARTISTID=}"
-		source_tag[$i]="${source_tag[$i]//Musicbrainz_Albumid=/MUSICBRAINZ_ALBUMID=}"
-		source_tag[$i]="${source_tag[$i]//Musicbrainz_Artistid=/MUSICBRAINZ_ARTISTID=}"
-		source_tag[$i]="${source_tag[$i]//Musicbrainz_Releasegroupid=/MUSICBRAINZ_RELEASEGROUPID=}"
-		source_tag[$i]="${source_tag[$i]//Originalyear=/ORIGINALYEAR=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_albumid=/MUSICBRAINZ_ALBUMID=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_artistid=/MUSICBRAINZ_ARTISTID=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_releasegroupid=/MUSICBRAINZ_RELEASEGROUPID=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_releasetrackid=/MUSICBRAINZ_RELEASETRACKID=}"
+		source_tag[$i]="${source_tag[$i]//musicbrainz_trackid=/MUSICBRAINZ_RELEASETRACKID=}"
+		source_tag[$i]="${source_tag[$i]//originalyear=/ORIGINALYEAR=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_album_gain=/REPLAYGAIN_ALBUM_GAIN=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_album_peak=/REPLAYGAIN_ALBUM_PEAK=}"
 		source_tag[$i]="${source_tag[$i]//replaygain_track_gain=/REPLAYGAIN_TRACK_GAIN=}"
@@ -204,6 +188,7 @@ APEv2_whitelist=(
 		source_tag[$i]="${source_tag[$i]//BARCODE=/Barcode=}"
 		source_tag[$i]="${source_tag[$i]//CATALOGNUMBER=/CatalogNumber=}"
 		source_tag[$i]="${source_tag[$i]//COMMENT=/Comment=}"
+		source_tag[$i]="${source_tag[$i]//COMPILATION=/Compilation=}"
 		source_tag[$i]="${source_tag[$i]//COMPOSER=/Composer=}"
 		source_tag[$i]="${source_tag[$i]//CONDUCTOR=/Conductor=}"
 		source_tag[$i]="${source_tag[$i]//COPYRIGHT=/Copyright=}"
@@ -235,9 +220,6 @@ APEv2_whitelist=(
 		source_tag[$i]="${source_tag[$i]//TRACKNUMBER=/Track=}"
 		source_tag[$i]="${source_tag[$i]//WEBSITE=/Weblink=}"
 		source_tag[$i]="${source_tag[$i]//WRITER=/Writer=}"
-		# Vorbis malformed
-		source_tag[$i]="${source_tag[$i]//musicbrainz_releasetrackid=/MUSICBRAINZ_RELEASETRACKID=}"
-		source_tag[$i]="${source_tag[$i]//musicbrainz_trackid=/MUSICBRAINZ_RELEASETRACKID=}"
 		# ID3v2
 		source_tag[$i]="${source_tag[$i]//Acoustid Id=/ACOUSTID_ID=}"
 		source_tag[$i]="${source_tag[$i]//arranger=/Arranger=}"
@@ -256,27 +238,34 @@ APEv2_whitelist=(
 		# iTune
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
 		# Waste fix
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/gI")
+		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/g")
 		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//gI")
 	done
-	stop_parse_substitution=$(($(date +%s%N)/1000000))
 
-	# Keep whitelisted tags - case insensitive
-	start_parse_blacklist=$(($(date +%s%N)/1000000))
-
+	# Whitelist parsing
 	mapfile -t tag_name < <( printf '%s\n' "${source_tag[@]}" | awk -F "=" '{print $1}' )
+	mapfile -t tag_label < <( printf '%s\n' "${source_tag[@]}" | cut -f2- -d'=' )
 	for i in "${!tag_name[@]}"; do
 		for tag in "${APEv2_whitelist[@]}"; do
-			[[ "${tag_name[i],,}" = "${tag,,}" ]] && continue 2
+			# ape2v2 std
+			if [[ "${tag_name[i],,}" = "${tag,,}" ]]; then
+				source_tag[$i]="${tag}=${tag_label[i]}"
+				continue 2
+			# reject
+			else
+				unset "source_tag[i]"
+			fi
 		done
-		unset "source_tag[i]"
 	done
-
-	stop_parse_blacklist=$(($(date +%s%N)/1000000))
+	
+	# Add encoder ape tags
+	source_tag+=( "EncodedBy=${mac_version}" )
+	source_tag+=( "EncoderSettings=${mac_compress_arg}" )
 
 	# Remove duplicate tags
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | sort -u )
+
+	stop_parse_substitution=$(($(date +%s%N)/1000000))
 
 	stop_all=$(($(date +%s%N)/1000000))
 
@@ -286,7 +275,6 @@ APEv2_whitelist=(
 	diff_wv_export=$(( stop_wv_export - start_wv_export ))
 	diff_m4a_export=$(( stop_m4a_export - start_m4a_export ))
 	diff_parse_substitution=$(( stop_parse_substitution - start_parse_substitution ))
-	diff_parse_blacklist=$(( stop_parse_blacklist - start_parse_blacklist ))
 
 	# Print
 	echo "filename: $file" | rev | cut -d'/' -f-2 | rev
@@ -296,7 +284,6 @@ APEv2_whitelist=(
 	echo " * export wv tag:      ${diff_wv_export}ms"
 	echo " * export m4a tag:     ${diff_m4a_export}ms"
 	echo " * rename tags:        ${diff_parse_substitution}ms"
-	echo " * keep whitelist:     ${diff_parse_blacklist}ms"
 	echo "----------------------------------------------------------"
 	echo "apev2 tags:"
 	printf '%s\n' "${source_tag[@]}"
