@@ -90,7 +90,7 @@ for file in "${lst_audio_src[@]}"; do
 		mv "${cache_dir}/${file##*/}.decode_error.log" "${file}.decode_error.log"
 		lst_audio_src_rejected+=( "$file" )
 	else
-		rm "${cache_dir}/${file##*/}.decode_error.log"
+		rm "${cache_dir}/${file##*/}.decode_error.log"  2>/dev/null
 		lst_audio_src_pass+=( "$file" )
 	fi
 done
@@ -750,7 +750,7 @@ flac_fix_arg="--totally-silent -f --verify --decode-through-errors"
 flac_decode_arg="--totally-silent -f -d"
 # WAVPACK
 wavpack_test_arg="-q -v"
-wavpack_decode_arg="-q"
+wavpack_decode_arg="-q -w"
 # Tag whitelist according with:
 # https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html
 # Ommit: EncodedBy, EncoderSettings = special case for rewrite this
