@@ -223,6 +223,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 	source_tag_temp=()
 	source_tag_temp1=()
 	source_tag_temp2=()
+	tag_name=()
 
 	# FLAC
 	if [[ -s "${file%.*}.flac" ]]; then
@@ -259,6 +260,7 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		mapfile -t source_tag_temp1 < <( printf '%s\n' "${source_tag_temp[@]}" \
 										| awk -F ":" '{print $1}' )
 		mapfile -t source_tag_temp2 < <( printf '%s\n' "${source_tag_temp[@]}" \
+										| cut -f2- -d' ' | sed 's/^ *//' )
 		for i in "${!source_tag_temp[@]}"; do
 			source_tag+=( "${source_tag_temp1[$i]}=${source_tag_temp2[$i]}" )
 		done
@@ -291,17 +293,6 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 
 	# Remove empty tag label=
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | grep "=" )
-
-	# Remove blacklisted tags
-	for i in "${!source_tag[@]}"; do
-		tag_label=$(echo "${source_tag[$i]}" \
-					| awk -F "=" '{print $1}')
-		for tag in "${APEv2_blacklist[@]}"; do
-			if [[ "${tag,,}" = "${tag_label,,}" ]];then
-				unset "source_tag[$i]"
-			fi
-		done
-	done
 
 	# Add encoder ape tags
 	source_tag+=( "EncodedBy=${mac_version}" )
@@ -398,6 +389,15 @@ for file in "${lst_audio_ape_compressed[@]}"; do
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/gI")
 		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\Artist: \b//g")
+	done
+	
+	# Keep whitelisted tags - case insensitive
+	mapfile -t tag_name < <( printf '%s\n' "${source_tag[@]}" | awk -F "=" '{print $1}' )
+	for i in "${!tag_name[@]}"; do
+		for tag in "${APEv2_whitelist[@]}"; do
+			[[ "${tag_name[i],,}" = "${tag,,}" ]] && continue 2
+		done
+		unset "source_tag[i]"
 	done
 
 	# Remove duplicate tags
@@ -762,86 +762,88 @@ flac_decode_arg="--totally-silent -f -d"
 # WAVPACK
 wavpack_test_arg="-q -v"
 wavpack_decode_arg="-q"
-# Tag blacklist
-# Something waste specific:
-#  * AccurateRipDiscID
-#  * ....
-#  * wwww
-# wavpack specific:
-#  * APEv2 tag items (head of wvtag output)
-# ffmpeg specific:
-#  * encoder
-#  * ...
-#  * vendor_id
-# vorbiscomment specific
-# ID3v2 specific
-# iTune specific
-APEv2_blacklist=(
-	'AccurateRipDiscID'
-	'AccurateRipResult'
-	'ACCURATERIPRESULT'
-	'album_artist'
-	'ALBUM ARTIST'
-	'ALBUM DYNAMIC RANGE'
-	'ALBUM DYNAMIC RANGE (R128)'
-	'ALBUM DYNAMIC RANGE (DR)'
-	'Artistsort'
-	'Catalog #'
-	'CDTOC'
-	'CodingHistory'
-	'DYNAMIC RANGE'
-	'DYNAMIC RANGE (R128)'
-	'DYNAMIC RANGE (DR)'
-	'DISCID'
-	'encoder settings'
-	'ENSEMBLE'
-	'LABELNO'
-	'Limited Edition'
-	'ORCHESTRA'
-	'OrigDate'
-	'Originator'
-	'OrigReference'
-	'OrigTime'
-	'Release Type'
-	'RELEASE DATE'
-	'Retail Date'
-	'Rip Date'
-	'Ripping Tool'
-	'TOOL VERSION'
-	'TOOL NAME'
-	'TimeReference'
-	'UPC'
-	'wwww'
-	'APEv2 tag items'
-	'encoder'
-	'compatible_brands'
-	'language'
-	'handler_name'
-	'major_brand'
-	'minor_version'
-	'vendor_id'
-	'DISCTOTAL'
-	'ENCODER'
-	'ENCODERSETTINGS'
-	'FINGERPRINT'
-	'LENGTH'
-	'MUSICBRAINZ_ORIGINALARTISTID'
-	'MUSICBRAINZ_ORIGINALALBUMID'
-	'originaldate'
-	'ORIGINALDATE'
-	'TOTALDISCS'
-	'TRACKTOTAL'
-	'TOTALTRACKS'
-	'MusicMagic Fingerprint'
-	'MusicBrainz Original Artist Id'
-	'MusicBrainz Original Album Id'
-	'fingerprint'
-	'pcst'
-	'pcst'
-	'purl'
-	'sosn'
-	'tvsh'
-	'Originaldate'
+# Tag whitelist according with:
+# https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html
+APEv2_whitelist=(
+	'ACOUSTID_ID'
+	'ACOUSTID_FINGERPRINT'
+	'Album'
+	'Album Artist'
+	'ALBUMARTISTSORT'
+	'ALBUMSORT'
+	'Arranger'
+	'Artist'
+	'ARTISTSORT'
+	'Artists'
+	'ASIN'
+	'Barcode'
+	'BPM'
+	'CatalogNumber'
+	'Comment'
+	'Compilation'
+	'Composer'
+	'COMPOSERSORT'
+	'Conductor'
+	'Copyright'
+	'Director'
+	'Disc'
+	'DiscSubtitle'
+	'EncodedBy'
+	'EncoderSettings'
+	'Engineer'
+	'Genre'
+	'Grouping'
+	'KEY'
+	'ISRC'
+	'Language'
+	'LICENSE'
+	'Lyricist'
+	'Lyrics'
+	'Media'
+	'DJMixer'
+	'Mixer'
+	'Mood'
+	'MOVEMENTNAME'
+	'MOVEMENTTOTAL'
+	'MOVEMENT'
+	'MUSICBRAINZ_ARTISTID'
+	'MUSICBRAINZ_DISCID'
+	'MUSICBRAINZ_TRACKID'
+	'MUSICBRAINZ_ALBUMARTISTID'
+	'MUSICBRAINZ_RELEASEGROUPID'
+	'MUSICBRAINZ_ALBUMID'
+	'MUSICBRAINZ_RELEASETRACKID'
+	'MUSICBRAINZ_TRMID'
+	'MUSICBRAINZ_WORKID'
+	'MUSICIP_PUID'
+	'Original Artist'
+	'ORIGINALFILENAME'
+	'ORIGINALYEAR'
+	'Performer'
+	'Producer'
+	'Label'
+	'RELEASECOUNTRY'
+	'Year'
+	'MUSICBRAINZ_ALBUMSTATUS'
+	'MUSICBRAINZ_ALBUMTYPE'
+	'MixArtist'
+	'REPLAYGAIN_ALBUM_GAIN'
+	'REPLAYGAIN_ALBUM_PEAK'
+	'REPLAYGAIN_ALBUM_RANGE'
+	'REPLAYGAIN_REFERENCE_LOUDNESS'
+	'REPLAYGAIN_TRACK_GAIN'
+	'REPLAYGAIN_TRACK_PEAK'
+	'REPLAYGAIN_TRACK_RANGE'
+	'Script'
+	'SHOWMOVEMENT'
+	'Subtitle'
+	'Disc'
+	'Track'
+	'Title'
+	'TITLESORT'
+	'Weblink'
+	'WORK'
+	'Writer'
 )
 
 # Command arguments

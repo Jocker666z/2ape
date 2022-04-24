@@ -36,6 +36,7 @@ for file in "${lst_audio_src[@]}"; do
 	source_tag_temp=()
 	source_tag_temp1=()
 	source_tag_temp2=()
+	tag_name=()
 
 	# FLAC
 	if [[ -s "${file%.*}.flac" ]]; then
@@ -74,104 +75,92 @@ for file in "${lst_audio_src[@]}"; do
 		stop_m4a_export=$(($(date +%s%N)/1000000))
 	fi
 
-# Tag blacklist
-# Something waste specific:
-#  * AccurateRipDiscID
-#  * ....
-#  * wwww
-# wavpack specific:
-#  * APEv2 tag items (head of wvtag output)
-# ffmpeg specific:
-#  * encoder
-#  * ...
-#  * wwww
-# vorbiscomment specific
-# ID3v2 specific
-# iTune specific
-# MusicBrainz internal specific
-APEv2_blacklist=(
-	'AccurateRipDiscID'
-	'AccurateRipResult'
-	'ACCURATERIPRESULT'
-	'album_artist'
-	'ALBUM ARTIST'
-	'ALBUM DYNAMIC RANGE'
-	'ALBUM DYNAMIC RANGE (R128)'
-	'ALBUM DYNAMIC RANGE (DR)'
-	'Artistsort'
-	'Catalog #'
-	'CDTOC'
-	'CodingHistory'
-	'DYNAMIC RANGE'
-	'DYNAMIC RANGE (R128)'
-	'DYNAMIC RANGE (DR)'
-	'DISCID'
-	'encoder settings'
-	'ENSEMBLE'
-	'LABELNO'
-	'Limited Edition'
-	'ORCHESTRA'
-	'OrigDate'
-	'Originator'
-	'OrigReference'
-	'OrigTime'
-	'Release Type'
-	'RELEASE DATE'
-	'Retail Date'
-	'Rip Date'
-	'Ripping Tool'
-	'TOOL VERSION'
-	'TOOL NAME'
-	'TimeReference'
-	'UPC'
-	'wwww'
-	'APEv2 tag items'
-	'encoder'
-	'compatible_brands'
-	'language'
-	'handler_name'
-	'major_brand'
-	'minor_version'
-	'vendor_id'
-	'DISCTOTAL'
-	'ENCODER'
-	'ENCODERSETTINGS'
-	'FINGERPRINT'
-	'LENGTH'
-	'MUSICBRAINZ_ORIGINALARTISTID'
-	'MUSICBRAINZ_ORIGINALALBUMID'
-	'originaldate'
-	'ORIGINALDATE'
-	'TOTALDISCS'
-	'TRACKTOTAL'
-	'TOTALTRACKS'
-	'MusicMagic Fingerprint'
-	'MusicBrainz Original Artist Id'
-	'MusicBrainz Original Album Id'
-	'fingerprint'
-	'pcst'
-	'pcst'
-	'purl'
-	'sosn'
-	'tvsh'
-	'Originaldate'
+# Tag whitelist according with:
+# https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html
+APEv2_whitelist=(
+	'ACOUSTID_ID'
+	'ACOUSTID_FINGERPRINT'
+	'Album'
+	'Album Artist'
+	'ALBUMARTISTSORT'
+	'ALBUMSORT'
+	'Arranger'
+	'Artist'
+	'ARTISTSORT'
+	'Artists'
+	'ASIN'
+	'Barcode'
+	'BPM'
+	'CatalogNumber'
+	'Comment'
+	'Compilation'
+	'Composer'
+	'COMPOSERSORT'
+	'Conductor'
+	'Copyright'
+	'Director'
+	'Disc'
+	'DiscSubtitle'
+	'EncodedBy'
+	'EncoderSettings'
+	'Engineer'
+	'Genre'
+	'Grouping'
+	'KEY'
+	'ISRC'
+	'Language'
+	'LICENSE'
+	'Lyricist'
+	'Lyrics'
+	'Media'
+	'DJMixer'
+	'Mixer'
+	'Mood'
+	'MOVEMENTNAME'
+	'MOVEMENTTOTAL'
+	'MOVEMENT'
+	'MUSICBRAINZ_ARTISTID'
+	'MUSICBRAINZ_DISCID'
+	'MUSICBRAINZ_TRACKID'
+	'MUSICBRAINZ_ALBUMARTISTID'
+	'MUSICBRAINZ_RELEASEGROUPID'
+	'MUSICBRAINZ_ALBUMID'
+	'MUSICBRAINZ_RELEASETRACKID'
+	'MUSICBRAINZ_TRMID'
+	'MUSICBRAINZ_WORKID'
+	'MUSICIP_PUID'
+	'Original Artist'
+	'ORIGINALFILENAME'
+	'ORIGINALYEAR'
+	'Performer'
+	'Producer'
+	'Label'
+	'RELEASECOUNTRY'
+	'Year'
+	'MUSICBRAINZ_ALBUMSTATUS'
+	'MUSICBRAINZ_ALBUMTYPE'
+	'MixArtist'
+	'REPLAYGAIN_ALBUM_GAIN'
+	'REPLAYGAIN_ALBUM_PEAK'
+	'REPLAYGAIN_ALBUM_RANGE'
+	'REPLAYGAIN_REFERENCE_LOUDNESS'
+	'REPLAYGAIN_TRACK_GAIN'
+	'REPLAYGAIN_TRACK_PEAK'
+	'REPLAYGAIN_TRACK_RANGE'
+	'Script'
+	'SHOWMOVEMENT'
+	'Subtitle'
+	'Disc'
+	'Track'
+	'Title'
+	'TITLESORT'
+	'Weblink'
+	'WORK'
+	'Writer'
 )
 
 	# Remove empty tag label=
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | grep "=" )
-
-	# Remove blacklisted tags - case insensitive
-	start_parse_blacklist=$(($(date +%s%N)/1000000))
-	for i in "${!source_tag[@]}"; do
-		tag_label=$(echo "${source_tag[$i]}" \
-					| awk -F "=" '{print $1}')
-		for tag in "${APEv2_blacklist[@]}"; do
-			if [[ "${tag,,}" = "${tag_label,,}" ]];then
-				unset "source_tag[$i]"
-			fi
-		done
-	done
-	stop_parse_blacklist=$(($(date +%s%N)/1000000))
 
 	# Add encoder ape tags
 	source_tag+=( "EncodedBy=${mac_version}" )
@@ -273,6 +262,19 @@ APEv2_blacklist=(
 	done
 	stop_parse_substitution=$(($(date +%s%N)/1000000))
 
+	# Keep whitelisted tags - case insensitive
+	start_parse_blacklist=$(($(date +%s%N)/1000000))
+
+	mapfile -t tag_name < <( printf '%s\n' "${source_tag[@]}" | awk -F "=" '{print $1}' )
+	for i in "${!tag_name[@]}"; do
+		for tag in "${APEv2_whitelist[@]}"; do
+			[[ "${tag_name[i],,}" = "${tag,,}" ]] && continue 2
+		done
+		unset "source_tag[i]"
+	done
+
+	stop_parse_blacklist=$(($(date +%s%N)/1000000))
+
 	# Remove duplicate tags
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | sort -u )
 
@@ -283,8 +285,8 @@ APEv2_blacklist=(
 	diff_flac_export=$(( stop_flac_export - start_flac_export ))
 	diff_wv_export=$(( stop_wv_export - start_wv_export ))
 	diff_m4a_export=$(( stop_m4a_export - start_m4a_export ))
-	diff_parse_blacklist=$(( stop_parse_blacklist - start_parse_blacklist ))
 	diff_parse_substitution=$(( stop_parse_substitution - start_parse_substitution ))
+	diff_parse_blacklist=$(( stop_parse_blacklist - start_parse_blacklist ))
 
 	# Print
 	echo "filename: $file" | rev | cut -d'/' -f-2 | rev
@@ -293,8 +295,8 @@ APEv2_blacklist=(
 	echo " * export flac tag:    ${diff_flac_export}ms"
 	echo " * export wv tag:      ${diff_wv_export}ms"
 	echo " * export m4a tag:     ${diff_m4a_export}ms"
-	echo " * remove blacklisted: ${diff_parse_blacklist}ms"
 	echo " * rename tags:        ${diff_parse_substitution}ms"
+	echo " * keep whitelist:     ${diff_parse_blacklist}ms"
 	echo "----------------------------------------------------------"
 	echo "apev2 tags:"
 	printf '%s\n' "${source_tag[@]}"
