@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2086
+# shellcheck disable=SC2001,SC2086
 # 2apev2_check
 # Tool for see the list of tags as interpreted by 2ape
 # \(^o^)/ 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2086
+# shellcheck disable=SC2001,SC2086
 # 2ape
 # Various lossless to Monkey's Audio while keeping the tags.
 # \(^o^)/ 
@@ -210,8 +210,6 @@ local cover_test
 local cover_image_type
 local cover_ext
 local tag_label
-local wavpack_tag_parsing_1
-local wavpack_tag_parsing_2
 local grab_tag_counter
 
 grab_tag_counter="0"
