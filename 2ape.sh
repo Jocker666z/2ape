@@ -750,7 +750,7 @@ flac_fix_arg="--totally-silent -f --verify --decode-through-errors"
 flac_decode_arg="--totally-silent -f -d"
 # WAVPACK
 wavpack_test_arg="-q -v"
-wavpack_decode_arg="-q -w"
+wavpack_decode_arg="-q -w -y"
 # Tag whitelist according with:
 # https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html
 # Ommit: EncodedBy, EncoderSettings = special case for rewrite this
