@@ -23,6 +23,7 @@ mapfile -t lst_audio_src < <(find "$PWD" -maxdepth 3 -type f -regextype posix-eg
 								-iregex '.*\.('$input_ext')$' 2>/dev/null | sort)
 
 # Clean source array
+# Keep only ALAC codec among m4a files
 for i in "${!lst_audio_src[@]}"; do
 	# Keep only ALAC codec among m4a files
 	if [[ "${lst_audio_src[i]##*.}" = "m4a" ]]; then
@@ -32,7 +33,9 @@ for i in "${!lst_audio_src[@]}"; do
 			unset "lst_audio_src[$i]"
 		fi
 	fi
-	# Keep only 16 bits source if arg -16bits_only
+done
+# Keep only 16 bits source if arg -16bits_only
+for i in "${!lst_audio_src[@]}"; do
 	if [[ "${bits16_only}" = "1" ]]; then
 		codec_test=$(ffprobe -v error -select_streams a:0 \
 			-show_entries stream=sample_fmt -of csv=s=x:p=0 "${lst_audio_src[i]}"  )
@@ -874,6 +877,15 @@ while [[ $# -gt 0 ]]; do
 	;;
 	"--16bits_only")
 		bits16_only="1"
+	;;
+	"--alac_only")
+		alac_only="1"
+	;;
+	"--flac_only")
+		flac_only="1"
+	;;
+	"--wavpack_only")
+		wavpack_only="1"
 	;;
 	-v|--verbose)
 		verbose="1"
