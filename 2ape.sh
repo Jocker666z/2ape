@@ -902,23 +902,18 @@ while [[ $# -gt 0 ]]; do
 		exit
 	;;
 	"--16bits_only")
-		shift
 		bits16_only="1"
 	;;
 	"--alac_only")
-		shift
 		alac_only="1"
 	;;
 	"--flac_only")
-		shift
 		flac_only="1"
 	;;
 	"--wavpack_only")
-		shift
 		wavpack_only="1"
 	;;
 	-v|--verbose)
-		shift
 		verbose="1"
 	;;
 	*)
