@@ -32,6 +32,14 @@ for i in "${!lst_audio_src[@]}"; do
 			unset "lst_audio_src[$i]"
 		fi
 	fi
+	# Keep only 16 bits source if arg -16bits_only
+	if [[ "${bits16_only}" = "1" ]]; then
+		codec_test=$(ffprobe -v error -select_streams a:0 \
+			-show_entries stream=sample_fmt -of csv=s=x:p=0 "${lst_audio_src[i]}"  )
+		if [[ "$codec_test" = "s32" ]] || [[ "$codec_test" = "s32p" ]]; then
+			unset "lst_audio_src[$i]"
+		fi
+	fi
 done
 }
 # Verify source integrity
@@ -729,8 +737,30 @@ for command in "${core_dependencies[@]}"; do
 done
 command_display "2ape"
 }
+# Usage print
+usage() {
+cat <<- EOF
+2ape - GNU GPL-2.0 Copyright - <https://github.com/Jocker666z/2ape>
+Various lossless to Monkey's Audio while keeping the tags.
 
-# Nees Dependencies
+Processes all compatible files in the current directory
+and the three subdirectories.
+
+Usage:
+2ape [options]
+
+Options:
+  --16bits_only           Compress only 16bits source.
+  -v, --verbose           More verbose, for debug.
+
+Supported source files:
+  * ALAC as .m4a
+  * FLAC as .flac
+  * WAVPACK as .wv
+EOF
+}
+
+# Need Dependencies
 core_dependencies=(ffmpeg ffprobe flac mac metaflac wvunpack wvtag)
 # Paths
 export PATH=$PATH:/home/$USER/.local/bin
@@ -838,8 +868,19 @@ APEv2_whitelist=(
 while [[ $# -gt 0 ]]; do
 	key="$1"
 	case "$key" in
+	-h|--help)
+		usage
+		exit
+	;;
+	"--16bits_only")
+		bits16_only="1"
+	;;
 	-v|--verbose)
 		verbose="1"
+	;;
+	*)
+		usage
+		exit
 	;;
 esac
 shift
