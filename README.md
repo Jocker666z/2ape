@@ -15,6 +15,9 @@ Lossless audio source supported: ALAC, FLAC, WAVPACK
 Processes all compatible files in the current directory and the three subdirectories.
 ```
 Options:
+  --alac_only             Compress only ALAC source.
+  --flac_only             Compress only FLAC source.
+  --wavpack_only          Compress only WAVPACK source.
   --16bits_only           Compress only 16bits source.
-  -v, --verbose           More verbose, for debug.nfo.
+  -v, --verbose           More verbose, for debug.
 ```

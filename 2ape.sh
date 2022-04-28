@@ -22,7 +22,30 @@ search_source_files() {
 mapfile -t lst_audio_src < <(find "$PWD" -maxdepth 3 -type f -regextype posix-egrep \
 								-iregex '.*\.('$input_ext')$' 2>/dev/null | sort)
 
-# Clean source array
+# Keep only ALAC if arg --alac_only
+if [[ "${alac_only}" = "1" ]]; then
+	for i in "${!lst_audio_src[@]}"; do
+		if [[ "${lst_audio_src[i]##*.}" != "m4a" ]]; then
+				unset "lst_audio_src[$i]"
+		fi
+	done
+fi
+# Keep only FLAC if arg --flac_only
+if [[ "${flac_only}" = "1" ]]; then
+	for i in "${!lst_audio_src[@]}"; do
+		if [[ "${lst_audio_src[i]##*.}" != "flac" ]]; then
+				unset "lst_audio_src[$i]"
+		fi
+	done
+fi
+# Keep only WAVPACK if arg --wavpack_only
+if [[ "${wavpack_only}" = "1" ]]; then
+	for i in "${!lst_audio_src[@]}"; do
+		if [[ "${lst_audio_src[i]##*.}" != "wv" ]]; then
+				unset "lst_audio_src[$i]"
+		fi
+	done
+fi
 # Keep only ALAC codec among m4a files
 for i in "${!lst_audio_src[@]}"; do
 	# Keep only ALAC codec among m4a files
@@ -34,16 +57,16 @@ for i in "${!lst_audio_src[@]}"; do
 		fi
 	fi
 done
-# Keep only 16 bits source if arg -16bits_only
-for i in "${!lst_audio_src[@]}"; do
-	if [[ "${bits16_only}" = "1" ]]; then
-		codec_test=$(ffprobe -v error -select_streams a:0 \
-			-show_entries stream=sample_fmt -of csv=s=x:p=0 "${lst_audio_src[i]}"  )
-		if [[ "$codec_test" = "s32" ]] || [[ "$codec_test" = "s32p" ]]; then
-			unset "lst_audio_src[$i]"
-		fi
-	fi
-done
+# Keep only 16 bits source if arg --16bits_only
+if [[ "${bits16_only}" = "1" ]]; then
+	for i in "${!lst_audio_src[@]}"; do
+			codec_test=$(ffprobe -v error -select_streams a:0 \
+				-show_entries stream=sample_fmt -of csv=s=x:p=0 "${lst_audio_src[i]}"  )
+			if [[ "$codec_test" = "s32" ]] || [[ "$codec_test" = "s32p" ]]; then
+				unset "lst_audio_src[$i]"
+			fi
+	done
+fi
 }
 # Verify source integrity
 test_source() {
@@ -753,6 +776,9 @@ Usage:
 2ape [options]
 
 Options:
+  --alac_only             Compress only ALAC source.
+  --flac_only             Compress only FLAC source.
+  --wavpack_only          Compress only WAVPACK source.
   --16bits_only           Compress only 16bits source.
   -v, --verbose           More verbose, for debug.
 
@@ -876,18 +902,23 @@ while [[ $# -gt 0 ]]; do
 		exit
 	;;
 	"--16bits_only")
+		shift
 		bits16_only="1"
 	;;
 	"--alac_only")
+		shift
 		alac_only="1"
 	;;
 	"--flac_only")
+		shift
 		flac_only="1"
 	;;
 	"--wavpack_only")
+		shift
 		wavpack_only="1"
 	;;
 	-v|--verbose)
+		shift
 		verbose="1"
 	;;
 	*)
