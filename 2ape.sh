@@ -38,6 +38,14 @@ if [[ "${flac_only}" = "1" ]]; then
 		fi
 	done
 fi
+# Keep only WAV if arg --wav_only
+if [[ "${wavpack_only}" = "1" ]]; then
+	for i in "${!lst_audio_src[@]}"; do
+		if [[ "${lst_audio_src[i]##*.}" != "wav" ]]; then
+				unset "lst_audio_src[$i]"
+		fi
+	done
+fi
 # Keep only WAVPACK if arg --wavpack_only
 if [[ "${wavpack_only}" = "1" ]]; then
 	for i in "${!lst_audio_src[@]}"; do
@@ -83,8 +91,8 @@ for file in "${lst_audio_src[@]}"; do
 	# WAVPACK - Verify integrity
 	elif [[ "${file##*.}" = "wv" ]]; then
 		wvunpack $wavpack_test_arg "$file" 2>"${cache_dir}/${file##*/}.decode_error.log"
-	# ALAC - Verify integrity
-	elif [[ "${file##*.}" = "m4a" ]]; then
+	# ALAC, WAV - Verify integrity
+	elif [[ "${file##*.}" = "m4a" ]] || [[ "${file##*.}" = "wav" ]]; then
 		ffmpeg -v error -i "$file" -max_muxing_queue_size 9999 -f null - 2>"${cache_dir}/${file##*/}.decode_error.log"
 	fi
 	) &
@@ -492,13 +500,15 @@ if ! [[ "$verbose" = "1" ]]; then
 	fi
 fi
 
-# Clean + tag target array
-for file in "${lst_audio_wav_decoded[@]}"; do
+# Clean + target array
+for i in "${!lst_audio_wav_decoded[@]}"; do
 	# Array of ape target
-	lst_audio_ape_compressed+=( "${file%.*}.ape" )
+	lst_audio_ape_compressed+=( "${lst_audio_wav_decoded[i]%.*}.ape" )
 
 	# Remove temp wav files
-	rm -f "${file%.*}.wav" 2>/dev/null
+	if [[ "${lst_audio_src[i]##*.}" != "wav" ]]; then
+		rm -f "${lst_audio_src[i]%.*}.wav" 2>/dev/null
+	fi
 done
 }
 # Monkey's Audio - Tag
@@ -778,6 +788,7 @@ Usage:
 Options:
   --alac_only             Compress only ALAC source.
   --flac_only             Compress only FLAC source.
+  --wav_only              Compress only WAV source.
   --wavpack_only          Compress only WAVPACK source.
   --16bits_only           Compress only 16bits source.
   -v, --verbose           More verbose, for debug.
@@ -797,7 +808,7 @@ cache_dir="/tmp/2ape"
 # Nb process parrallel (nb of processor)
 nproc=$(nproc --all)
 # Input extention available
-input_ext="flac|m4a|wv"
+input_ext="flac|m4a|wv|wav"
 # Monkey's Audio
 mac_version="Monkey's Audio $(mac 2>&1 | head -1 | awk -F"[()]" '{print $2}' | tr -d ' ')"
 mac_compress_arg="-c5000"
@@ -909,6 +920,9 @@ while [[ $# -gt 0 ]]; do
 	;;
 	"--flac_only")
 		flac_only="1"
+	;;
+	"--wav_only")
+		wav_only="1"
 	;;
 	"--wavpack_only")
 		wavpack_only="1"
