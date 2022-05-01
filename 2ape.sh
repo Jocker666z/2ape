@@ -745,9 +745,6 @@ fi
 if [[ "$command" = "wvtag" ]] || [[ "$command" = "wvunpack" ]]; then
 	command="$command (wavpack package)"
 fi
-if [[ "$command" = "wvunpack" ]] || [[ "$command" = "wvunpack" ]]; then
-	command="$command (wavpack package)"
-fi
 }
 command_display() {
 local label
@@ -796,6 +793,7 @@ Options:
 Supported source files:
   * ALAC as .m4a
   * FLAC as .flac
+  * WAV as .wav
   * WAVPACK as .wv
 EOF
 }
