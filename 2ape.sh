@@ -82,7 +82,7 @@ local test_counter
 
 test_counter="0"
 
-# Decode
+# Test
 for file in "${lst_audio_src[@]}"; do
 	(
 	# FLAC - Verify integrity
@@ -240,9 +240,8 @@ if ! [[ "$verbose" = "1" ]]; then
 	fi
 fi
 
-# Ape target ape array
+# Ape target array
 for file in "${lst_audio_src_pass[@]}"; do
-	# Array of ape target
 	lst_audio_wav_decoded+=( "${file%.*}.wav" )
 done
 }
