@@ -776,7 +776,7 @@ cat <<- EOF
 Various lossless to Monkey's Audio while keeping the tags.
 
 Processes all compatible files in the current directory
-and the three subdirectories.
+and his three subdirectories.
 
 Usage:
 2ape [options]

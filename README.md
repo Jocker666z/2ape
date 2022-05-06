@@ -12,7 +12,7 @@ Lossless audio source supported: ALAC, FLAC, WAV, WAVPACK
 `ffmpeg flac monkeys-audio wavpack`
 
 ## Use
-Processes all compatible files in the current directory and the three subdirectories.
+Processes all compatible files in the current directory and his three subdirectories.
 ```
 Options:
   --alac_only             Compress only ALAC source.

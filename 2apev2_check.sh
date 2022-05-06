@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2001,SC2086
 # 2apev2_check
-# Tool for see the list of tags as interpreted by 2ape
+# Tool for see the list of tags in apev2
 # \(^o^)/ 
 #
 # Author : Romain Barbarot
 # https://github.com/Jocker666z/2ape/
 # Licence : unlicense
 
-mac_version="Monkey's Audio $(mac 2>&1 | head -1 | awk -F"[()]" '{print $2}' | tr -d ' ')"
-mac_compress_arg="-c5000"
-input_ext="flac|m4a|wv"
+input_ext="ape|flac|m4a|wv"
 
 mapfile -t lst_audio_src < <(find "$PWD" -maxdepth 2 -type f -regextype posix-egrep \
 								-iregex '.*\.('$input_ext')$' 2>/dev/null | sort)
@@ -74,11 +72,21 @@ for file in "${lst_audio_src[@]}"; do
 			source_tag[$i]="${source_tag[$i]//TAG:/}"
 		done
 		stop_m4a_export=$(($(date +%s%N)/1000000))
+	# Monkey's Audio
+	elif [[ -s "${file%.*}.ape" ]]; then
+		start_ape_export=$(($(date +%s%N)/1000000))
+		# Source file tags array
+		mapfile -t source_tag < <( ffprobe -v error -show_entries stream_tags:format_tags \
+									-of default=noprint_wrappers=1 "${file%.*}.ape" )
+		# Clean array
+		for i in "${!source_tag[@]}"; do
+			source_tag[$i]="${source_tag[$i]//TAG:/}"
+		done
+		stop_ape_export=$(($(date +%s%N)/1000000))
 	fi
 
 # Tag whitelist according with:
 # https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html
-# Ommit: EncodedBy, EncoderSettings = special case for rewrite this
 APEv2_whitelist=(
 	'ACOUSTID_ID'
 	'ACOUSTID_FINGERPRINT'
@@ -103,6 +111,8 @@ APEv2_whitelist=(
 	'Director'
 	'Disc'
 	'DiscSubtitle'
+	'EncodedBy'
+	'EncoderSettings'
 	'Engineer'
 	'Genre'
 	'Grouping'
@@ -257,10 +267,6 @@ APEv2_whitelist=(
 			fi
 		done
 	done
-	
-	# Add encoder ape tags
-	source_tag+=( "EncodedBy=${mac_version}" )
-	source_tag+=( "EncoderSettings=${mac_compress_arg}" )
 
 	# Remove duplicate tags
 	mapfile -t source_tag < <( printf '%s\n' "${source_tag[@]}" | sort -u )
@@ -274,6 +280,7 @@ APEv2_whitelist=(
 	diff_flac_export=$(( stop_flac_export - start_flac_export ))
 	diff_wv_export=$(( stop_wv_export - start_wv_export ))
 	diff_m4a_export=$(( stop_m4a_export - start_m4a_export ))
+	diff_ape_export=$(( stop_ape_export - start_ape_export ))
 	diff_parse_substitution=$(( stop_parse_substitution - start_parse_substitution ))
 
 	# Print
@@ -283,6 +290,7 @@ APEv2_whitelist=(
 	echo " * export flac tag:    ${diff_flac_export}ms"
 	echo " * export wv tag:      ${diff_wv_export}ms"
 	echo " * export m4a tag:     ${diff_m4a_export}ms"
+	echo " * export ape tag:     ${diff_ape_export}ms"
 	echo " * rename tags:        ${diff_parse_substitution}ms"
 	echo "----------------------------------------------------------"
 	echo "apev2 tags:"
