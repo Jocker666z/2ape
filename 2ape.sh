@@ -68,11 +68,15 @@ done
 # Keep only 16 bits source if arg --16bits_only
 if [[ "${bits16_only}" = "1" ]]; then
 	for i in "${!lst_audio_src[@]}"; do
-			codec_test=$(ffprobe -v error -select_streams a:0 \
-				-show_entries stream=sample_fmt -of csv=s=x:p=0 "${lst_audio_src[i]}"  )
-			if [[ "$codec_test" = "s32" ]] || [[ "$codec_test" = "s32p" ]]; then
-				unset "lst_audio_src[$i]"
-			fi
+		codec_test=$(ffprobe -v error -select_streams a:0 \
+			-show_entries stream=sample_fmt -of csv=s=x:p=0 "${lst_audio_src[i]}"  )
+		if [[ "$codec_test" = "u8" ]] \
+		|| [[ "$codec_test" = "s32" ]] \
+		|| [[ "$codec_test" = "s32p" ]] \
+		|| [[ "$codec_test" = "flt" ]] \
+		|| [[ "$codec_test" = "dbl" ]]; then
+			unset "lst_audio_src[$i]"
+		fi
 	done
 fi
 }
@@ -782,11 +786,11 @@ Usage:
 2ape [options]
 
 Options:
+  --16bits_only           Compress only 16bits source.
   --alac_only             Compress only ALAC source.
   --flac_only             Compress only FLAC source.
   --wav_only              Compress only WAV source.
   --wavpack_only          Compress only WAVPACK source.
-  --16bits_only           Compress only 16bits source.
   -v, --verbose           More verbose, for debug.
 
 Supported source files:
