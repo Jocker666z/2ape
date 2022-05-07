@@ -961,6 +961,7 @@ search_source_files
 if (( "${#lst_audio_src[@]}" )); then
 	echo
 	echo "2ape start processing with $mac_version \(^o^)/"
+	echo "Working directory: $(echo ${PWD} | rev | cut -d'/' -f-1 | rev)"
 	echo
 	echo "${#lst_audio_src[@]} source files found"
 
