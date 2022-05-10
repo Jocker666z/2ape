@@ -39,7 +39,7 @@ if [[ "${flac_only}" = "1" ]]; then
 	done
 fi
 # Keep only WAV if arg --wav_only
-if [[ "${wavpack_only}" = "1" ]]; then
+if [[ "${wav_only}" = "1" ]]; then
 	for i in "${!lst_audio_src[@]}"; do
 		if [[ "${lst_audio_src[i]##*.}" != "wav" ]]; then
 				unset "lst_audio_src[$i]"
