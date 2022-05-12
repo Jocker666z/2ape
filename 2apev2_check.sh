@@ -251,6 +251,7 @@ APEv2_whitelist=(
 		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/g")
 		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
 		source_tag[$i]="${source_tag[$i]//Album Artist=Artist: /Album Artist=}"
+		source_tag[$i]="${source_tag[$i]//Album Artist=ARTIST: /Album Artist=}"
 	done
 
 	# Whitelist parsing
