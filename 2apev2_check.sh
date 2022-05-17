@@ -55,7 +55,7 @@ for file in "${lst_audio_src[@]}"; do
 		mapfile -t source_tag_temp1 < <( printf '%s\n' "${source_tag_temp[@]}" \
 										| awk -F ":" '{print $1}' )
 		mapfile -t source_tag_temp2 < <( printf '%s\n' "${source_tag_temp[@]}" \
-										| cut -f2- -d' ' | sed 's/^ *//' )
+										| cut -f2- -d':' | sed 's/^ *//' )
 		for i in "${!source_tag_temp[@]}"; do
 			source_tag+=( "${source_tag_temp1[$i]}=${source_tag_temp2[$i]}" )
 		done
@@ -248,10 +248,8 @@ APEv2_whitelist=(
 		# iTune
 		source_tag[$i]="${source_tag[$i]//MusicBrainz Album Artist Id=/MUSICBRAINZ_ALBUMARTISTID=}"
 		# Waste fix
-		source_tag[$i]=$(echo ${source_tag[$i]} | sed "s/\bdate=\b/Year=/g")
-		source_tag[$i]="${source_tag[$i]//PUBLISHER=/Label=}"
-		source_tag[$i]="${source_tag[$i]//Album Artist=Artist: /Album Artist=}"
-		source_tag[$i]="${source_tag[$i]//Album Artist=ARTIST: /Album Artist=}"
+		source_tag[$i]="${source_tag[$i]//date=/Year=}"
+		source_tag[$i]="${source_tag[$i]//DATE=/Year=}"
 	done
 
 	# Whitelist parsing
