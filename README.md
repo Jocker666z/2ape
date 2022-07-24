@@ -22,3 +22,4 @@ Options:
   --16bits_only           Compress only 16bits source.
   -v, --verbose           More verbose, for debug.
 ```
+Default compression is `-c5000`.
